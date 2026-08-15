@@ -1,0 +1,128 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+# Distribution and import package are both `cordispy`. The plain name `cordis`
+# is taken on PyPI by an unrelated 0.0.0 placeholder from 2024 that ships its own
+# top-level `cordis` package, so this project stays clear of it on both counts.
+name = "cordispy"
+version = "0.0.1"
+description = "A Python realization of the spatiotemporal composability runtime described in the Cordis paper"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "s2005", email = "s2005@users.noreply.github.com" }]
+keywords = [
+    "cordis",
+    "effects",
+    "coeffects",
+    "plugin",
+    "plugin-system",
+    "hot-reload",
+    "composability",
+    "asyncio",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Framework :: AsyncIO",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Typing :: Typed",
+]
+dependencies = ["pyyaml>=6.0"]
+
+[project.urls]
+Homepage = "https://github.com/s2005/cordispy"
+Repository = "https://github.com/s2005/cordispy"
+Documentation = "https://github.com/s2005/cordispy#documentation"
+Issues = "https://github.com/s2005/cordispy/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cordispy"]
+
+[tool.hatch.build.targets.sdist]
+# The sdist carries everything needed to reproduce the measurements the README
+# quotes: the runtime, its tests, the runnable examples they assert against, and
+# the prose that explains them.
+include = [
+    "src/cordispy",
+    "tests",
+    "examples",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error::RuntimeWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "F",     # pyflakes
+    "W",     # pycodestyle warnings
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific
+    "ASYNC", # flake8-async
+    "PIE",   # flake8-pie
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests deliberately declare plugin callbacks that ignore their `config`
+# argument and define throw-away closures; neither is a defect there.
+"tests/*" = ["B008"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = "cordispy.context"
+# `Context.__getattr__` is this port's stand-in for the TypeScript `Proxy` get
+# trap (paper section 5.1.4, Algorithm 6). A coeffect is resolved by *name* at
+# run time against the accessing fiber's committed view, so its result is
+# genuinely untyped -- `Any` is the whole point of the construct, not an
+# oversight. `warn_return_any` would otherwise demand an inline suppression,
+# which this project forbids, so the rule is relaxed for this module only.
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "yaml"
+# PyYAML ships no `py.typed` marker and its stubs live in a separate
+# distribution (`types-PyYAML`) that this project deliberately does not depend
+# on. The loader touches exactly one symbol of it, `yaml.safe_load`, behind a
+# lazy import so that a JSON configuration still loads without PyYAML at all.
+# Declaring the third-party module untyped here is not a suppression of any
+# diagnostic about this project's own code.
+ignore_missing_imports = true

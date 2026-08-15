@@ -1,0 +1,28 @@
+{
+  "plugins": [
+    {
+      "id": "store",
+      "name": "loader_plugins:store"
+    },
+    {
+      "id": "tools",
+      "name": "cordispy:group",
+      "config": [
+        {
+          "id": "greeter",
+          "name": "loader_plugins:greeter",
+          "config": {
+            "greeting": "hello"
+          }
+        },
+        {
+          "id": "counter",
+          "name": "loader_plugins:counter",
+          "config": {
+            "step": 1
+          }
+        }
+      ]
+    }
+  ]
+}

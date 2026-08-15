@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Environments
+.venv/
+venv/
+env/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# uv
+# uv.lock is deliberately NOT ignored: this repository is an application and a
+# demo, so the lockfile is committed to keep `uv sync` reproducible.
+
+# UAT walkthrough artifacts
+# tests/UAT/loader.sh writes a generated plugin package here and removes it in
+# its last step; --keep-output leaves it behind on purpose.
+output/

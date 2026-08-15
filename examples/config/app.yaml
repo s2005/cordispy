@@ -1,0 +1,25 @@
+# The declarative configuration realized by examples/run_loader.py.
+#
+# Every record is an entry (paper Definition 74): an id that is the
+# reconciliation key, a name selecting the component, and the configuration
+# bound into it. An entry named "cordispy:group" takes a list of child entries as
+# its configuration and loads them as a subgroup.
+#
+# examples/config/app.json is the same document in JSON, so the loader can be
+# shown reading either.
+plugins:
+  - id: store
+    name: loader_plugins:store
+
+  - id: tools
+    name: cordispy:group
+    config:
+      - id: greeter
+        name: loader_plugins:greeter
+        config:
+          greeting: hello
+
+      - id: counter
+        name: loader_plugins:counter
+        config:
+          step: 1

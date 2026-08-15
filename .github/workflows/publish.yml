@@ -1,0 +1,57 @@
+name: Publish
+
+# Tagging `v0.0.1` publishes version 0.0.1 to PyPI. Run the workflow by hand
+# (workflow_dispatch) to build and check the artifacts without publishing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cordispy
+    permissions:
+      # A job-level block replaces the workflow-level one rather than adding to
+      # it, so contents: read has to be repeated here or the checkout cannot
+      # read the repository.
+      contents: read
+      # Required by PyPI Trusted Publishing; no API token is stored anywhere.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Verify the tag matches the packaged version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(python3 -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+          if [ "$tag" != "$version" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match project.version ${version} in pyproject.toml" >&2
+            exit 1
+          fi
+          echo "Publishing version ${version} from tag ${GITHUB_REF_NAME}"
+
+      # The tests gate the release: a tag that does not pass them never uploads.
+      - run: uv sync --all-extras --frozen
+
+      - run: uv run pytest -q
+
+      - run: uv build
+
+      - name: Check the built metadata renders on PyPI
+        run: uvx twine check --strict dist/*
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        if: startsWith(github.ref, 'refs/tags/')

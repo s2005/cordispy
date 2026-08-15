@@ -1,0 +1,4 @@
+# Shell scripts must stay LF: they run under Git Bash on Windows, where a
+# CRLF shebang line makes the interpreter unusable. core.autocrlf=true would
+# otherwise convert them on checkout.
+*.sh text eol=lf

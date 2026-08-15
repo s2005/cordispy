@@ -1,0 +1,1077 @@
+<!doctype html>                                          <!-- doc-skeleton -->
+<html lang="en"><head>                                   <!-- doc-skeleton -->
+<meta charset="utf-8">                                   <!-- doc-skeleton -->
+<meta name="viewport" content="width=device-width, initial-scale=1">  <!-- doc-skeleton -->
+<meta name="color-scheme" content="light dark">          <!-- doc-skeleton -->
+<!-- Standalone copy of the hosted demo. Open it directly from a clone; it needs no server and loads nothing from the network. Lines tagged doc-skeleton are the document wrapper the artifact host supplies itself, so stripping them yields the hosted version verbatim: grep -v doc-skeleton docs/demo-calculator.html --> the published fragment. -->  <!-- doc-skeleton -->
+<title>The Composable Calculator</title>
+<style>
+  :root {
+    --ground:      #F5F7F6;
+    --surface:     #FFFFFF;
+    --surface-sunk:#EDF1EF;
+    --ink:         #101E1B;
+    --ink-soft:    #566A64;
+    --rule:        #D9E0DD;
+    --rule-strong: #B8C4C0;
+    --accent:      #0C6B5F;
+    --accent-wash: #E2F0ED;
+    --counter:     #A24A26;
+    --counter-wash:#F7E7DF;
+    --warn:        #8A6A12;
+    --warn-wash:   #F6EEDA;
+    --shadow:      0 1px 2px rgba(16,30,27,.06), 0 8px 24px -12px rgba(16,30,27,.18);
+
+    --measure: 66ch;
+    --step--2: clamp(.68rem, .66rem + .08vw, .73rem);
+    --step--1: clamp(.78rem, .76rem + .1vw, .84rem);
+    --step-0:  clamp(1rem, .97rem + .15vw, 1.06rem);
+    --step-1:  clamp(1.18rem, 1.1rem + .35vw, 1.36rem);
+    --step-2:  clamp(1.45rem, 1.25rem + .85vw, 1.95rem);
+    --step-3:  clamp(2rem, 1.6rem + 1.9vw, 3.3rem);
+
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0C1412; --surface:#131E1B; --surface-sunk:#0F1917;
+      --ink:#E7EEEA; --ink-soft:#90A29D; --rule:#243230; --rule-strong:#354643;
+      --accent:#55C9B4; --accent-wash:#10322D; --counter:#DB8B63; --counter-wash:#31201A;
+      --warn:#D9B65C; --warn-wash:#2C2616;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0C1412; --surface:#131E1B; --surface-sunk:#0F1917;
+    --ink:#E7EEEA; --ink-soft:#90A29D; --rule:#243230; --rule-strong:#354643;
+    --accent:#55C9B4; --accent-wash:#10322D; --counter:#DB8B63; --counter-wash:#31201A;
+    --warn:#D9B65C; --warn-wash:#2C2616;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--sans); font-size: var(--step-0); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1rem, 3.5vw, 2.25rem) 5rem; }
+  .prose { max-width: var(--measure); display: flex; flex-direction: column; gap: 1rem; }
+  .prose p { margin: 0; }
+  a { color: var(--accent); text-underline-offset: .18em; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: var(--step--1); letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-soft); margin: 0;
+  }
+  .masthead {
+    padding: clamp(2.5rem, 7vw, 4.5rem) 0 clamp(1.75rem, 4vw, 2.75rem);
+    border-bottom: 1px solid var(--rule);
+    display: flex; flex-direction: column; gap: 1.4rem;
+  }
+  h1 {
+    font-family: var(--mono); font-size: var(--step-3); line-height: 1.02;
+    letter-spacing: -.03em; font-weight: 500; margin: 0; text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .standfirst {
+    font-size: var(--step-1); line-height: 1.45; color: var(--ink-soft);
+    max-width: 60ch; margin: 0; text-wrap: pretty;
+  }
+  section { padding-top: clamp(2.5rem, 6vw, 4rem); }
+  h2 {
+    font-family: var(--mono); font-size: var(--step-2); font-weight: 500;
+    letter-spacing: -.02em; line-height: 1.15; margin: 0 0 1rem; text-wrap: balance;
+  }
+  h3 { font-family: var(--mono); font-size: var(--step-0); font-weight: 600; margin: 0; }
+  .section-head { display: flex; flex-direction: column; gap: .35rem; margin-bottom: 1.5rem; }
+  .section-head .eyebrow { order: -1; }
+
+  button {
+    font: inherit; font-family: var(--mono); font-size: var(--step--1);
+    color: var(--ink); background: var(--surface);
+    border: 1px solid var(--rule-strong); border-radius: 2px;
+    padding: .5em .85em; cursor: pointer; line-height: 1.2;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  button.primary { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+  button.ghost { border-style: dashed; color: var(--ink-soft); }
+  button.danger:hover:not(:disabled) { border-color: var(--counter); color: var(--counter); }
+
+  /* operation toggles */
+  .op {
+    display: inline-flex; align-items: baseline; gap: .5ch;
+    font-family: var(--mono); min-width: 5.4rem; justify-content: center;
+  }
+  .op .sym { font-size: var(--step-0); font-weight: 600; }
+  .op .nm { font-size: var(--step--2); color: var(--ink-soft); }
+  .op.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .op.on { color: #0C1412; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .op.on { color: #0C1412; } }
+  .op.on .nm { color: inherit; opacity: .8; }
+
+  .wt-bar {
+    border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    background: var(--surface); border-radius: 3px; box-shadow: var(--shadow);
+    padding: 1rem 1.15rem; display: flex; flex-direction: column; gap: .85rem;
+  }
+  .wt-top { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; justify-content: space-between; }
+  .wt-now { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+  .wt-count { font-family: var(--mono); font-size: var(--step--2); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+  .wt-title { font-family: var(--mono); font-size: var(--step-0); font-weight: 600; }
+  .wt-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .rail { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .chip {
+    font-family: var(--mono); font-size: var(--step--2); font-variant-numeric: tabular-nums;
+    width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--rule-strong); border-radius: 2px;
+    background: var(--surface); color: var(--ink-soft); cursor: pointer; padding: 0;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.pass { border-color: var(--accent); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+  .chip.fail { border-color: var(--counter); background: var(--counter-wash); color: var(--counter); font-weight: 600; }
+  .chip.current { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Free play sits BELOW the lab: the walkthrough never uses these controls, so
+     putting them first made them read as the primary thing to touch. */
+  .freeplay-head {
+    margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--rule);
+    display: flex; flex-direction: column; gap: .3rem; max-width: var(--measure);
+  }
+  .freeplay-head p { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+  .controls {
+    border: 1px solid var(--rule); background: var(--surface); border-radius: 3px;
+    padding: 1rem 1.15rem; margin-top: .85rem;
+    display: flex; flex-wrap: wrap; gap: 1.1rem 1.75rem; align-items: flex-end;
+  }
+  .cgroup { display: flex; flex-direction: column; gap: .45rem; }
+  .clabel { font-family: var(--mono); font-size: var(--step--2); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+  .crow { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+  input[type="text"] {
+    font: inherit; font-family: var(--mono); font-size: var(--step-0);
+    color: var(--ink); background: var(--surface-sunk);
+    border: 1px solid var(--rule-strong); border-radius: 2px;
+    padding: .45em .7em; width: 13rem; max-width: 100%;
+  }
+
+  .lab { display: grid; gap: 1rem; margin-top: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 900px)  { .lab { grid-template-columns: 1fr 1fr; } .lab .explain { grid-column: 1 / -1; } }
+  @media (min-width: 1180px) { .lab { grid-template-columns: 1fr 1fr 22rem; } .lab .explain { grid-column: auto; } }
+
+  .pane {
+    border: 1px solid var(--rule); background: var(--surface);
+    border-radius: 3px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .pane-head {
+    padding: .8rem 1.05rem; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; justify-content: space-between; gap: .75rem;
+    background: var(--surface-sunk);
+  }
+  .pane-head .who { font-family: var(--mono); font-size: var(--step--1); font-weight: 600; }
+  .pane-head .tag { font-family: var(--mono); font-size: var(--step--2); color: var(--ink-soft); text-align: right; }
+  .pane.a .pane-head { border-bottom-color: var(--accent); } .pane.a .who { color: var(--accent); }
+  .pane.b .pane-head { border-bottom-color: var(--counter); } .pane.b .who { color: var(--counter); }
+  .pane-body { padding: 1.05rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field .h { font-family: var(--mono); font-size: var(--step--2); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+
+  .helpline {
+    font-family: var(--mono); font-size: var(--step-1); letter-spacing: .12em;
+    background: var(--surface-sunk); border: 1px solid var(--rule);
+    border-radius: 2px; padding: .55rem .7rem; min-height: 2.6rem;
+    display: flex; flex-wrap: wrap; gap: .1rem .45rem; align-items: center;
+  }
+  .helpline .s { color: var(--ink); }
+  .helpline .s.unusable { color: var(--counter); font-weight: 700; position: relative; }
+  .helpline .s.unusable::after {
+    content: ""; position: absolute; left: -.1em; right: -.1em; bottom: -.15em;
+    border-bottom: 2px wavy var(--counter); border-bottom-style: solid;
+  }
+  .helpline .none { color: var(--ink-soft); font-size: var(--step--1); letter-spacing: 0; }
+
+  .badges { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .badge {
+    font-family: var(--mono); font-size: var(--step--2); font-weight: 600;
+    padding: .2em .5em; border-radius: 2px; border: 1px solid var(--rule-strong);
+    color: var(--ink-soft); letter-spacing: .04em;
+  }
+  .badge.ok   { color: var(--accent);  border-color: var(--accent);  background: var(--accent-wash); }
+  .badge.bad  { color: var(--counter); border-color: var(--counter); background: var(--counter-wash); }
+  .badge.wait { color: var(--warn);    border-color: var(--warn);    background: var(--warn-wash); }
+
+  .meters { display: flex; flex-direction: column; border-top: 1px solid var(--rule); }
+  .meter {
+    display: grid; grid-template-columns: 1fr 3rem; gap: .5rem; align-items: center;
+    padding: .45rem 0; border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: var(--step--1); font-variant-numeric: tabular-nums;
+  }
+  .meter .lab2 { color: var(--ink-soft); font-size: var(--step--2); letter-spacing: .04em; text-transform: uppercase; }
+  .meter .v { text-align: right; }
+  .meter.alarm .v { color: var(--counter); font-weight: 700; }
+  .meter.alarm .lab2 { color: var(--counter); }
+
+  .wire {
+    font-family: var(--mono); font-size: var(--step--1); line-height: 1.5;
+    background: var(--surface-sunk); border: 1px solid var(--rule);
+    border-radius: 2px; padding: .6rem .7rem; overflow-x: auto;
+    white-space: pre-wrap; word-break: break-word; min-height: 3rem;
+  }
+  .wire .ok { color: var(--accent); font-weight: 600; }
+  .wire .err { color: var(--counter); }
+  .wire .dim { color: var(--ink-soft); }
+  .wire .q { color: var(--ink-soft); }
+
+  .explain .pane-head { border-bottom-color: var(--rule-strong); }
+  .block { display: flex; flex-direction: column; gap: .25rem; }
+  .block .h { font-family: var(--mono); font-size: var(--step--2); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+  .block p { margin: 0; font-size: var(--step--1); line-height: 1.55; color: var(--ink-soft); }
+  .block p strong { color: var(--ink); font-weight: 600; }
+  .block.expect p { color: var(--ink); }
+  .asserts { display: flex; flex-direction: column; gap: .2rem; padding-top: .2rem; }
+  .assert { display: grid; grid-template-columns: 3.6rem 1fr; gap: .5rem; font-family: var(--mono); font-size: var(--step--2); line-height: 1.45; }
+  .assert .m { font-weight: 600; }
+  .assert.p .m { color: var(--accent); }
+  .assert.f .m { color: var(--counter); }
+  .summary {
+    border-top: 1px solid var(--rule-strong); padding-top: .75rem;
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.6;
+    display: flex; flex-direction: column; gap: .1rem; color: var(--ink-soft);
+  }
+  .summary .result { font-size: var(--step--1); font-weight: 600; margin-top: .3rem; }
+  .summary .result.pass { color: var(--accent); }
+  .summary .result.fail { color: var(--counter); }
+  .offscript {
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.5;
+    border: 1px dashed var(--warn); background: var(--warn-wash); color: var(--warn);
+    border-radius: 2px; padding: .5rem .6rem;
+  }
+  .log {
+    display: flex; flex-direction: column; gap: .28rem;
+    border-top: 1px solid var(--rule); padding-top: .7rem;
+    max-height: 12rem; overflow-y: auto;
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.45;
+  }
+  .log div { display: grid; grid-template-columns: 3.6rem 1fr; gap: .5rem; }
+  .log .a-src { color: var(--accent); }
+  .log .b-src { color: var(--counter); }
+
+  .split { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
+  .mech { border: 1px solid var(--rule); background: var(--surface); border-radius: 3px; padding: 1.4rem; display: flex; flex-direction: column; gap: .9rem; }
+  .mech p { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+  .cmds { display: flex; flex-direction: column; gap: .55rem; margin-top: 1.25rem; }
+  .cmd {
+    font-family: var(--mono); font-size: var(--step--1);
+    background: var(--surface-sunk); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); border-radius: 2px;
+    padding: .75rem .95rem; overflow-x: auto; white-space: pre; color: var(--ink);
+  }
+  .cmd .c { color: var(--ink-soft); }
+  .foot {
+    margin-top: clamp(2.5rem, 6vw, 4rem); padding-top: 1.4rem;
+    border-top: 1px solid var(--rule); max-width: var(--measure);
+    font-size: var(--step--1); color: var(--ink-soft);
+  }
+</style>
+</head><body>                                            <!-- doc-skeleton -->
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Dynamic operations for a calculator</p>
+    <h1>Operations come and go.<br>The answers <em>stay right</em>.</h1>
+    <p class="standfirst">
+      Every arithmetic operation is a plugin. Adding one more plugin adds another operation to the
+      calculator; taking one out should make it forget. Toggle the operations below and type an expression
+      &mdash; both runtimes calculate the same expression, and only one of them does it accurately.
+    </p>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">The lab</p>
+      <h2>Toggle an operation. Then ask both calculators what they can do.</h2>
+    </div>
+    <div class="prose">
+      <p>
+        Five primitives and one derived operation. <code>%</code> is a remainder, and a remainder is
+        <em>defined</em> as <code>a - floor(a / b) * b</code> &mdash; so it works only for as long as
+        subtraction, multiplication and division all do. Turn off division and watch what each calculator
+        goes on offering.
+      </p>
+      <p>
+        Both sides below are an interactive model of <code>examples/run_calculator.py</code>, which runs
+        the same comparison against the real runtime and prints the same numbers.
+      </p>
+    </div>
+
+    <div class="wt-bar" style="margin-top:1.5rem">
+      <div class="wt-top">
+        <div class="wt-now">
+          <span class="wt-count" id="wt-count">Walkthrough &middot; not started</span>
+          <span class="wt-title" id="wt-title">Press Next step to begin</span>
+        </div>
+        <div class="wt-actions">
+          <button type="button" id="wt-back">Back</button>
+          <button type="button" id="wt-next" class="primary">Next step</button>
+          <button type="button" id="wt-restart" class="ghost">Restart</button>
+        </div>
+      </div>
+      <div class="rail" id="rail"></div>
+    </div>
+
+    <div class="lab">
+      <article class="pane a">
+        <div class="pane-head"><span class="who">CORDIS</span><span class="tag">effects on a fiber</span></div>
+        <div class="pane-body">
+          <div class="field">
+            <span class="h">help &mdash; what it offers</span>
+            <div class="helpline" id="help-a"></div>
+          </div>
+          <div class="field"><span class="h">operations</span><div class="badges" id="ops-a"></div></div>
+          <div class="meters" id="meters-a"></div>
+          <div class="field"><span class="h">last evaluation</span><div class="wire" id="wire-a"></div></div>
+        </div>
+      </article>
+
+      <article class="pane b">
+        <div class="pane-head"><span class="who">CONVENTIONAL REGISTRY</span><span class="tag">setup() / teardown()</span></div>
+        <div class="pane-body">
+          <div class="field">
+            <span class="h">help &mdash; what it offers</span>
+            <div class="helpline" id="help-b"></div>
+          </div>
+          <div class="field"><span class="h">operations</span><div class="badges" id="ops-b"></div></div>
+          <div class="meters" id="meters-b"></div>
+          <div class="field"><span class="h">last evaluation</span><div class="wire" id="wire-b"></div></div>
+        </div>
+      </article>
+
+      <article class="pane explain">
+        <div class="pane-head"><span class="who" id="explain-head">WALKTHROUGH</span></div>
+        <div class="pane-body" id="explain-body"></div>
+      </article>
+    </div>
+
+    <div class="freeplay-head">
+      <span class="eyebrow">Free play</span>
+      <p>Drive the two calculators yourself. The walkthrough above never touches these controls, so
+      anything you change here is your own experiment - press Restart to put the walkthrough back in
+      charge.</p>
+    </div>
+
+    <div class="controls">
+      <div class="cgroup">
+        <span class="clabel">operation plugins</span>
+        <div class="crow" id="ops-ctl"></div>
+      </div>
+      <div class="cgroup">
+        <span class="clabel">expression</span>
+        <div class="crow">
+          <input type="text" id="expr" value="2 ^ 3 + 1" aria-label="expression to evaluate"
+                 autocomplete="off" spellcheck="false">
+          <button type="button" id="btn-eval" class="primary">evaluate</button>
+        </div>
+      </div>
+      <div class="cgroup">
+        <span class="clabel">a plugin that fails mid-load</span>
+        <div class="crow">
+          <button type="button" id="btn-broken" class="danger">load factorial (!)</button>
+        </div>
+      </div>
+      <div class="cgroup">
+        <span class="clabel">&nbsp;</span>
+        <div class="crow"><button type="button" id="btn-reset" class="ghost">reset</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Why it diverges</p>
+      <h2>The teardown is complete. It is still not enough.</h2>
+    </div>
+    <div class="split">
+      <article class="mech">
+        <p class="eyebrow">Not a straw man</p>
+        <h3>The conventional teardown has no bug in it</h3>
+        <p>
+          When division is unregistered, its <code>teardown()</code> removes it from all four of the
+          calculator's tables &mdash; the operator table, the precedence table, the tokenizer's alphabet
+          and the catalog <code>help</code> reads. There is no forgotten line.
+        </p>
+        <p>
+          What it cannot do is tell <code>%</code> that the division it resolved at registration has gone
+          away. <code>require</code> resolved once and handed back a direct reference; nothing invalidates
+          it later, because nothing is tracking it. So the remainder stays registered, stays advertised, and
+          fails the next time it is asked to divide.
+        </p>
+      </article>
+      <article class="mech">
+        <p class="eyebrow">Declarations</p>
+        <h3>One line of dependency management</h3>
+        <p>
+          On the cordis side the remainder declares <code>inject=["op.sub", "op.mul", "op.div"]</code>. That
+          is the whole of it. Retiring division changes the fiber's target, the runtime deactivates the
+          remainder, and its catalog entry goes with it &mdash; so the calculator stops offering a
+          remainder the moment it stops being able to compute one.
+        </p>
+        <p>
+          The memo cache is the sting. It is opened <em>while evaluating an expression</em>, long after
+          setup returned, so a hand-written teardown cannot reach it &mdash; and on the conventional side it
+          survives to answer, correctly, for exactly the pairs it happens to hold.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Run it for real</p>
+      <h2>This page models it; these commands measure it</h2>
+    </div>
+    <div class="prose">
+      <p>
+        The walkthrough is modelled on <code>tests/UAT/calculator.sh</code>, which runs the same sequence
+        against the real runtime and asserts each step.
+      </p>
+    </div>
+    <div class="cmds">
+      <div class="cmd" tabindex="0">uv run python examples/run_calculator.py --scenario remove</div>
+      <div class="cmd" tabindex="0">uv run python examples/run_calculator.py --scenario all</div>
+      <div class="cmd" tabindex="0">./tests/UAT/calculator.sh --auto   <span class="c"># the same run, asserted step by step</span></div>
+    </div>
+    <div class="prose" style="margin-top:1.25rem">
+      <p>
+        Its companion page, <code>docs/demo.html</code>, makes the same argument by counting what a retired
+        component leaves behind in a live process. (Named rather than linked: the two pages sit beside each
+        other in a clone, but are published at separate addresses.)
+      </p>
+    </div>
+  </section>
+
+  <p class="foot">
+    cordispy is a Python realization of the runtime described in <em>A Programming Paradigm for
+    Spatiotemporal Composability</em> (Shi, Zhang, Cui). Both calculators here run the same arithmetic out
+    of the same shared engine (<code>examples/calc/engine.py</code>); only composition differs. The
+    conventional side is a faithful implementation with no planted bug &mdash; see
+    <code>examples/calc/naive_side.py</code>, whose header says exactly which two properties of the design
+    every difference follows from.
+  </p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- the operations, mirroring examples/calc/engine.py -------------------
+  // `depends` is what an operation's arithmetic dispatches through. Only the
+  // derived remainder has any, which is what makes "unsound" computable rather
+  // than a matter of opinion.
+  var OPS = [
+    { name: "add", sym: "+", prec: 1, help: "add two numbers",             depends: [] },
+    { name: "sub", sym: "-", prec: 1, help: "subtract right from left",    depends: [] },
+    { name: "mul", sym: "*", prec: 2, help: "multiply two numbers",        depends: [] },
+    { name: "div", sym: "/", prec: 2, help: "divide left by right",        depends: [] },
+    { name: "pow", sym: "^", prec: 3, help: "raise left to the right",     depends: [] },
+    { name: "mod", sym: "%", prec: 2, help: "remainder after division",    depends: ["-", "*", "/"] }
+  ];
+  var BY_NAME = {};
+  OPS.forEach(function (o) { BY_NAME[o.name] = o; });
+
+  // Which operation keys each one cannot load without.
+  var REQUIRES = { mod: ["sub", "mul", "div"] };
+
+  var FACTORIAL = { name: "factorial", sym: "!", prec: 3, help: "factorial of left, times right", depends: [] };
+
+  function compute(side, sym, a, b) {
+    if (sym === "+") { return a + b; }
+    if (sym === "-") { return a - b; }
+    if (sym === "*") { return a * b; }
+    if (sym === "/") { return a / b; }
+    if (sym === "^") { return Math.pow(a, b); }
+    if (sym === "%") {
+      // A remainder is *defined* as a - floor(a / b) * b, so it is worked out
+      // through whichever division, multiplication and subtraction are
+      // installed -- looked up live rather than captured, which is the
+      // charitable implementation: a captured reference would go on working and
+      // hide the problem.
+      if (!side.operators["/"]) { throw { kind: "KeyError", text: "KeyError: '/'" }; }
+      if (!side.operators["*"]) { throw { kind: "KeyError", text: "KeyError: '*'" }; }
+      if (!side.operators["-"]) { throw { kind: "KeyError", text: "KeyError: '-'" }; }
+      var whole = Math.floor(dispatch(side, "/", a, b));
+      return dispatch(side, "-", a, dispatch(side, "*", whole, b));
+    }
+    if (sym === "!") {
+      // Its lookup table was never built, because loading failed after it had
+      // already installed itself.
+      throw { kind: "IndexError", text: "IndexError: list index out of range" };
+    }
+    throw { kind: "BrokenOperationError", text: "operator '" + sym + "' is advertised but not installed" };
+  }
+
+  function freshSide() {
+    return {
+      operators: {},   // sym -> op          (what the evaluator can dispatch)
+      precedence: {},  // sym -> number      (what the parser climbs)
+      alphabet: {},    // sym -> true        (what the tokenizer accepts)
+      catalog: {},     // sym -> help text   (what `help` offers)
+      caches: {},      // name -> {key: value}
+      evictions: {},   // name -> true       (a pending timer)
+      status: {},      // name -> ACTIVE | PENDING | INACTIVE | REGISTERED | REJECTED | FAILED | ABSENT
+      wanted: {},      // name -> the operator asked for it
+      wire: null
+    };
+  }
+
+  function install(side, op) {
+    side.operators[op.sym] = op;
+    side.precedence[op.sym] = op.prec;
+    side.alphabet[op.sym] = true;
+    side.catalog[op.sym] = op.help;
+  }
+  function uninstall(side, op) {
+    delete side.operators[op.sym];
+    delete side.precedence[op.sym];
+    delete side.alphabet[op.sym];
+    delete side.catalog[op.sym];
+  }
+  // Only the cordis side can do this: the cache and the timer were opened during
+  // evaluation, and only an effect on the fiber knows they belong to the op.
+  function releaseCache(side, name) {
+    delete side.caches[name];
+    delete side.evictions[name];
+  }
+
+  // ---- measurements --------------------------------------------------------
+  function advertised(side) { return Object.keys(side.catalog); }
+  function usable(side) { return Object.keys(side.operators); }
+  function unsound(side) {
+    return usable(side).filter(function (sym) {
+      return (side.operators[sym].depends || []).some(function (d) { return !side.operators[d]; });
+    });
+  }
+  function broken(side) {
+    var out = advertised(side).filter(function (s) { return !side.operators[s]; });
+    unsound(side).forEach(function (s) { if (out.indexOf(s) < 0) { out.push(s); } });
+    return out.sort();
+  }
+  function count(obj) { return Object.keys(obj).length; }
+
+  // ---- evaluation ----------------------------------------------------------
+  function tokenize(side, text) {
+    var symbols = Object.keys(side.alphabet).sort(function (a, b) { return b.length - a.length; });
+    var tokens = [], i = 0;
+    while (i < text.length) {
+      var ch = text.charAt(i);
+      if (/\s/.test(ch)) { i += 1; continue; }
+      var num = /^\d+(\.\d+)?/.exec(text.slice(i));
+      if (num) { tokens.push(num[0]); i += num[0].length; continue; }
+      var hit = null;
+      for (var k = 0; k < symbols.length; k++) {
+        if (text.slice(i, i + symbols[k].length) === symbols[k]) { hit = symbols[k]; break; }
+      }
+      if (hit === null) { throw { kind: "UnknownSymbolError", text: "unknown operator '" + ch + "'" }; }
+      tokens.push(hit); i += hit.length;
+    }
+    return tokens;
+  }
+
+  function dispatch(side, sym, a, b) {
+    var op = side.operators[sym];
+    if (!op) { throw { kind: "BrokenOperationError", text: "operator '" + sym + "' is advertised but not installed" }; }
+    var cache = side.caches[op.name];
+    if (!cache) {
+      // First evaluation of this operation opens its memo cache and arms an
+      // eviction timer -- during a request, after setup() returned.
+      cache = {};
+      side.caches[op.name] = cache;
+      side.evictions[op.name] = true;
+    }
+    var key = a + "," + b;
+    if (Object.prototype.hasOwnProperty.call(cache, key)) { return cache[key]; }
+    var value = compute(side, sym, a, b);
+    cache[key] = value;
+    return value;
+  }
+
+  function parse(side, tokens, minimum, state) {
+    var left = atom(tokens, state);
+    while (state.i < tokens.length) {
+      var sym = tokens[state.i];
+      var level = side.precedence[sym];
+      if (level === undefined || level < minimum) { break; }
+      state.i += 1;
+      var right = parse(side, tokens, level + 1, state);
+      left = dispatch(side, sym, left, right);
+    }
+    return left;
+  }
+  function atom(tokens, state) {
+    var head = tokens[state.i];
+    if (head === undefined) { throw { kind: "ParseError", text: "expected a number" }; }
+    var value = parseFloat(head);
+    if (isNaN(value)) { throw { kind: "ParseError", text: "expected a number, got '" + head + "'" }; }
+    state.i += 1;
+    return value;
+  }
+
+  function evaluate(side, text) {
+    try {
+      var tokens = tokenize(side, text);
+      if (!tokens.length) { return { ok: false, text: "ParseError: empty expression" }; }
+      var state = { i: 0 };
+      var value = parse(side, tokens, 0, state);
+      if (state.i < tokens.length) { return { ok: false, text: "ParseError: unexpected trailing input" }; }
+      return { ok: true, text: format(value) };
+    } catch (error) {
+      return { ok: false, text: error.kind === "UnknownSymbolError" || error.kind === "ParseError"
+        ? error.kind + ": " + error.text : error.text };
+    }
+  }
+  function format(v) { return v === Math.round(v) ? String(Math.round(v)) : String(Math.round(v * 1e6) / 1e6); }
+
+  // ---- the two runtimes ----------------------------------------------------
+  var A, B, LOG, EXPLAIN, lastExpr;
+
+  function log(src, text) { LOG.unshift({ src: src, text: text }); if (LOG.length > 50) { LOG.pop(); } }
+
+  // cordis: a component is ACTIVE exactly when its declarations are satisfied.
+  // Reaching the fixed point is the runtime's job, so this loops until nothing
+  // more changes -- retiring div deactivates mod, and nothing else.
+  function settle() {
+    var changed = true;
+    while (changed) {
+      changed = false;
+      OPS.forEach(function (op) {
+        var was = A.status[op.name] || "ABSENT";
+        if (!A.wanted[op.name]) {
+          if (was !== "ABSENT") {
+            uninstall(A, op); releaseCache(A, op.name);
+            A.status[op.name] = "ABSENT"; changed = true;
+            log("cordis", op.name + " retired; its install effect and memo cache were reversed");
+          }
+          return;
+        }
+        var needs = REQUIRES[op.name] || [];
+        var satisfied = needs.every(function (n) { return A.status[n] === "ACTIVE"; });
+        if (satisfied && was !== "ACTIVE") {
+          install(A, op); A.status[op.name] = "ACTIVE"; changed = true;
+          log("cordis", op.name + " target resolved -> ACTIVE, installed into all four tables");
+        } else if (!satisfied && was === "ACTIVE") {
+          uninstall(A, op); releaseCache(A, op.name);
+          A.status[op.name] = "PENDING"; changed = true;
+          log("cordis", op.name + " lost a required key -> deactivated, and withdrawn from help");
+        } else if (!satisfied && was === "ABSENT") {
+          A.status[op.name] = "PENDING"; changed = true;
+          log("cordis", op.name + " composed with unmet declarations -> PENDING (waiting, not failing)");
+        }
+      });
+    }
+  }
+
+  function toggle(name, on) {
+    var op = BY_NAME[name];
+
+    // ---- cordis: state the intent, let the runtime reach the fixed point.
+    A.wanted[name] = on;
+    settle();
+
+    // ---- registry: register() or unregister(), and nothing else happens.
+    if (on) {
+      var needs = REQUIRES[name] || [];
+      var missing = needs.filter(function (n) { return B.status[n] !== "REGISTERED"; });
+      if (missing.length) {
+        B.status[name] = "REJECTED";
+        log("registry", "register(" + name + ") raised MissingDependencyError - and will not be retried");
+      } else {
+        install(B, op); B.status[name] = "REGISTERED";
+        log("registry", "setup(" + name + ") ran -> REGISTERED; dependencies resolved once, by reference");
+      }
+    } else if (B.status[name] === "REGISTERED") {
+      // teardown() undoes what setup() did -- all four tables, completely. It
+      // cannot reach the memo cache, and it cannot tell dependents anything.
+      uninstall(B, op); B.status[name] = "ABSENT";
+      var stranded = unsound(B);
+      log("registry", "teardown(" + name + ") removed it from all four tables"
+        + (stranded.length ? "; " + stranded.join(" ") + " still advertised and now broken" : ""));
+    } else {
+      B.status[name] = "ABSENT";
+    }
+  }
+
+  function loadBroken() {
+    // Installs itself, then fails building the table its arithmetic needs.
+    A.status.factorial = "FAILED";
+    log("cordis", "factorial raised mid-load; the install effect was rolled back -> FAILED");
+    install(B, FACTORIAL);
+    B.status.factorial = "REJECTED";
+    log("registry", "factorial raised mid-load; the error was logged and it stayed in all four tables");
+    EXPLAIN = {
+      title: "An operation that failed to finish loading",
+      body: "It put itself into service and then failed to build the lookup table its arithmetic needs. " +
+        "<strong>cordis</strong> rolled the installation back, so the symbol never reaches the tokenizer. " +
+        "<strong>The registry</strong> logged the error and left it in all four tables, so <code>!</code> " +
+        "tokenizes, dispatches, and dies inside a handler that never finished loading. No static check " +
+        "can catch that shape -- only rolling it back helps."
+    };
+  }
+
+  function runExpression(text) {
+    lastExpr = text;
+    A.wire = evaluate(A, text);
+    B.wire = evaluate(B, text);
+    var masked = !A.wire.ok && B.wire.ok;
+    EXPLAIN = {
+      title: "Evaluated " + text,
+      body: masked
+        ? "<strong>The registry answered.</strong> Not because it can still perform the operation, but " +
+          "because that exact pair is in a memo cache opened before the dependency went away. Ask it a " +
+          "pair it has not seen and it raises. <strong>cordis</strong> answers the same way for every " +
+          "input, because the operation is simply gone."
+        : "Both runtimes were asked the same expression. Compare the two <code>help</code> lines above: " +
+          "what a calculator offers should be exactly what it can do."
+    };
+  }
+
+  function reset() {
+    A = freshSide(); B = freshSide(); LOG = []; lastExpr = null;
+    OPS.forEach(function (op) {
+      A.wanted[op.name] = true; A.status[op.name] = "ABSENT"; B.status[op.name] = "ABSENT";
+    });
+    settle();
+    OPS.forEach(function (op) {
+      var needs = REQUIRES[op.name] || [];
+      if (needs.every(function (n) { return B.status[n] === "REGISTERED"; })) {
+        install(B, op); B.status[op.name] = "REGISTERED";
+      }
+    });
+    LOG = [];
+    EXPLAIN = { title: "Reset", body: "All six operations composed on both sides. They are identical - that is the starting point." };
+  }
+
+  // ---- walkthrough ---------------------------------------------------------
+  function A_(label, ok) { return { label: label, ok: !!ok }; }
+  function has(side, sym) { return Object.prototype.hasOwnProperty.call(side.catalog, sym); }
+
+  var STEPS = [
+    {
+      title: "Two identical calculators",
+      why: "Both start with the same six operations installed, so any difference later is caused by the runtime and not by a different starting point.",
+      expect: "help offers % * + - / ^ on both sides, and neither advertises anything it cannot perform.",
+      run: function () { reset(); },
+      check: function () { return [
+        A_("cordis offers all six symbols", advertised(A).length === 6),
+        A_("the registry offers all six symbols", advertised(B).length === 6),
+        A_("neither advertises anything broken", !broken(A).length && !broken(B).length)
+      ]; }
+    },
+    {
+      title: "Warm the memo caches",
+      why: "Evaluating an expression is what opens each operation's memo cache and arms its eviction timer. They come into existence during a request, after setup() has returned - which is the detail everything below turns on.",
+      expect: "both answer 17 % 5 with 2 - the remainder - and both now hold memo caches.",
+      run: function () { runExpression("17 % 5"); },
+      check: function () { return [
+        A_("cordis evaluates 17 % 5 to 2", A.wire.ok && A.wire.text === "2"),
+        A_("the registry evaluates 17 % 5 to 2", B.wire.ok && B.wire.text === "2"),
+        A_("both opened memo caches during the request", count(A.caches) > 0 && count(B.caches) > 0)
+      ]; }
+    },
+    {
+      title: "Turn division off",
+      why: "A remainder is defined as a - floor(a / b) * b, so removing division should make the calculator stop offering a remainder. The conventional teardown here is complete - it removes division from all four tables - and it still is not enough, because nothing tells the remainder that anything happened.",
+      expect: "cordis withdraws % from help and holds the remainder deactivated; the registry keeps advertising % and now advertises something it cannot perform.",
+      run: function () { toggle("div", false); },
+      check: function () { return [
+        A_("cordis withdrew % from help", !has(A, "%")),
+        A_("cordis deactivated the remainder", A.status.mod === "PENDING"),
+        A_("cordis advertises nothing broken", broken(A).length === 0),
+        A_("the registry still offers %", has(B, "%")),
+        A_("the registry now advertises something broken", broken(B).indexOf("%") >= 0)
+      ]; }
+    },
+    {
+      title: "Ask for a pair the cache has seen",
+      why: "This is the shape of the bug that matters. The registry's remainder cannot divide any more, but the answer for this exact pair is sitting in a memo cache that outlived the dependency.",
+      expect: "cordis reports the operator as unknown; the registry answers 2, correctly, from a stale cache.",
+      run: function () { runExpression("17 % 5"); },
+      check: function () { return [
+        A_("cordis says the operator is unknown", !A.wire.ok && /unknown operator/.test(A.wire.text)),
+        A_("the registry answers 2 from its stale cache", B.wire.ok && B.wire.text === "2")
+      ]; }
+    },
+    {
+      title: "Ask for a pair it has never seen",
+      why: "Same operation, same session, one different number. A cache miss forces the registry's remainder to actually divide, and there is nothing left to divide with.",
+      expect: "cordis answers exactly as before; the registry raises KeyError: '/'.",
+      run: function () { runExpression("22 % 8"); },
+      check: function () { return [
+        A_("cordis answers the same way as for the cached pair", !A.wire.ok && /unknown operator/.test(A.wire.text)),
+        A_("the registry raises KeyError", !B.wire.ok && /KeyError/.test(B.wire.text)),
+        A_("so the registry's behaviour depends on the input", true)
+      ]; }
+    },
+    {
+      title: "Turn division back on",
+      why: "The runtime is meant to be symmetrical: if losing a dependency deactivates a component, regaining it should reactivate it, with no one driving the sequence.",
+      expect: "cordis reactivates the remainder and offers % again; both evaluate 22 % 8 to 6.",
+      run: function () { toggle("div", true); runExpression("22 % 8"); },
+      check: function () { return [
+        A_("cordis reactivated the remainder", A.status.mod === "ACTIVE"),
+        A_("and offers % again", has(A, "%")),
+        A_("cordis evaluates 22 % 8 to 6", A.wire.ok && A.wire.text === "6"),
+        A_("the registry works again too", B.wire.ok && B.wire.text === "6")
+      ]; }
+    },
+    {
+      title: "Compose the remainder before what it is built from",
+      why: "Composition order is a fact of life. A derived operation composed before its dependencies is either a waiting component or a hard failure, and which one decides whether load order is something you have to get right by hand.",
+      expect: "cordis holds the remainder PENDING and does not advertise it; the registry rejects it outright.",
+      run: function () {
+        reset();
+        ["add", "sub", "mul", "div", "pow", "mod"].forEach(function (n) { toggle(n, false); });
+        toggle("mod", true);
+      },
+      check: function () { return [
+        A_("cordis holds the remainder PENDING", A.status.mod === "PENDING"),
+        A_("and does not advertise it", !has(A, "%")),
+        A_("the registry rejected it", B.status.mod === "REJECTED"),
+        A_("and does not advertise it either", !has(B, "%"))
+      ]; }
+    },
+    {
+      title: "Now add what it needs",
+      why: "cordis activates any component whose declarations have become satisfied. The registry resolved its dependencies inside a setup() that already raised, and it does not retry.",
+      expect: "cordis activates the remainder by itself and evaluates 22 % 8; the registry is still rejected and still does not know the symbol.",
+      run: function () { toggle("sub", true); toggle("mul", true); toggle("div", true); runExpression("22 % 8"); },
+      check: function () { return [
+        A_("cordis activated the remainder by itself", A.status.mod === "ACTIVE"),
+        A_("cordis evaluates 22 % 8 to 6", A.wire.ok && A.wire.text === "6"),
+        A_("the registry is still rejected", B.status.mod === "REJECTED"),
+        A_("and still calls % unknown", !B.wire.ok && /unknown operator/.test(B.wire.text))
+      ]; }
+    },
+    {
+      title: "An operation that fails halfway through loading",
+      why: "By the time it raises it has already installed itself. Its arithmetic raises from inside its own closure, which no static check can detect - so the only thing that helps is rolling the installation back.",
+      expect: "cordis records FAILED with the symbol in none of the four tables; the registry leaves it in all four.",
+      run: function () { reset(); loadBroken(); },
+      check: function () { return [
+        A_("cordis recorded FAILED", A.status.factorial === "FAILED"),
+        A_("cordis left ! out of help", !has(A, "!")),
+        A_("cordis left ! out of the tokenizer", !A.alphabet["!"]),
+        A_("the registry left ! in help", has(B, "!")),
+        A_("and in the tokenizer", !!B.alphabet["!"])
+      ]; }
+    },
+    {
+      title: "Type an expression using it",
+      why: "The last question is whether any of that is reachable. A symbol left in the tokenizer by a component that never finished loading is a handler waiting to be dispatched into.",
+      expect: "cordis calls the operator unknown; the registry tokenizes it, dispatches, and raises IndexError from inside the half-loaded handler.",
+      run: function () { runExpression("5 ! 1"); },
+      check: function () { return [
+        A_("cordis calls the operator unknown", !A.wire.ok && /unknown operator/.test(A.wire.text)),
+        A_("the registry dispatches into the failed handler", !B.wire.ok && /IndexError/.test(B.wire.text))
+      ]; }
+    }
+  ];
+
+  var cur = -1, results = [], offScript = false;
+
+  function runTo(n) {
+    reset(); results = [];
+    for (var i = 0; i <= n; i++) { STEPS[i].run(); results[i] = STEPS[i].check(); }
+    cur = n; offScript = false;
+  }
+  function tally() {
+    var pass = 0, fail = 0;
+    results.forEach(function (rs) { rs.forEach(function (r) { if (r.ok) { pass++; } else { fail++; } }); });
+    return { pass: pass, fail: fail, steps: results.length };
+  }
+
+  // ---- rendering -----------------------------------------------------------
+  function badgeClass(status) {
+    if (status === "ACTIVE" || status === "REGISTERED") { return "ok"; }
+    if (status === "PENDING") { return "wait"; }
+    if (status === "REJECTED" || status === "FAILED") { return "bad"; }
+    return "";
+  }
+
+  function renderHelp(side, id) {
+    var el = document.getElementById(id);
+    var symbols = advertised(side).sort();
+    if (!symbols.length) { el.innerHTML = '<span class="none">offers nothing</span>'; return; }
+    var unusable = broken(side);
+    el.innerHTML = symbols.map(function (s) {
+      var isUnusable = unusable.indexOf(s) >= 0;
+      return '<span class="s' + (isUnusable ? " unusable" : "") + '" title="' +
+        (isUnusable ? "advertised, but cannot be performed" : side.catalog[s]) + '">' +
+        (s === "&" ? "&amp;" : s) + "</span>";
+    }).join("");
+  }
+
+  function renderOps(side, id) {
+    var names = OPS.map(function (o) { return o.name; });
+    if (side.status.factorial) { names = names.concat(["factorial"]); }
+    document.getElementById(id).innerHTML = names.map(function (n) {
+      var st = side.status[n] || "ABSENT";
+      if (st === "ABSENT") { return ""; }
+      return '<span class="badge ' + badgeClass(st) + '">' + n + " " + st + "</span>";
+    }).join("");
+  }
+
+  function renderMeters(side, id) {
+    var unusable = broken(side);
+    var rows = [
+      ["operations offered", advertised(side).length, false],
+      ["of those, performable", advertised(side).length - unusable.length, false],
+      ["advertised but broken", unusable.length, unusable.length > 0],
+      ["memo caches", count(side.caches), false],
+      ["eviction timers", count(side.evictions), false]
+    ];
+    document.getElementById(id).innerHTML = rows.map(function (r) {
+      return '<div class="meter' + (r[2] ? " alarm" : "") + '">' +
+        '<span class="lab2">' + r[0] + '</span><span class="v">' + r[1] + "</span></div>";
+    }).join("");
+  }
+
+  function renderWire(side, id) {
+    var el = document.getElementById(id);
+    if (!side.wire) { el.innerHTML = '<span class="dim">nothing evaluated yet</span>'; return; }
+    el.innerHTML = '<span class="q">' + (lastExpr || "") + '  =</span>\n' +
+      '<span class="' + (side.wire.ok ? "ok" : "err") + '">' + side.wire.text + "</span>";
+  }
+
+  function renderRail() {
+    document.getElementById("rail").innerHTML = STEPS.map(function (s, i) {
+      var cls = "chip";
+      if (results[i]) { cls += results[i].every(function (r) { return r.ok; }) ? " pass" : " fail"; }
+      if (i === cur) { cls += " current"; }
+      return '<button type="button" class="' + cls + '" data-step="' + i + '" title="' +
+        s.title.replace(/"/g, "&quot;") + '">' + i + "</button>";
+    }).join("");
+  }
+
+  function renderLogHtml() {
+    return '<div class="log">' + LOG.map(function (e) {
+      return '<div><span class="' + (e.src === "cordis" ? "a-src" : "b-src") + '">' +
+        (e.src === "cordis" ? "cordis" : "regstry") + "</span><span>" + e.text + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function renderExplain() {
+    var head = document.getElementById("explain-head");
+    var body = document.getElementById("explain-body");
+    var html = "";
+
+    if (offScript || cur < 0) {
+      head.textContent = offScript ? "FREE PLAY" : "WALKTHROUGH";
+      if (offScript) {
+        html += '<div class="offscript">Off script - a free-play action was taken. Press Restart, then ' +
+          "Next step, to run the walkthrough from the top.</div>";
+      }
+      if (cur < 0 && !offScript) {
+        html += '<div class="block"><span class="h">Walkthrough</span><p>Ten steps, modelled on ' +
+          "<code>tests/UAT/calculator.sh</code>. Each states why it exists and what to expect, applies one " +
+          "action to <strong>both</strong> calculators, then asserts the result against the live model. " +
+          "Press <strong>Next step</strong>, or click a number to jump.</p></div>";
+      }
+      if (EXPLAIN) {
+        html += '<div class="block"><span class="h">' + (offScript ? "What just happened" : "Free play") +
+          '</span><h4 style="margin:0;font-family:var(--mono);font-size:var(--step--1)">' + EXPLAIN.title +
+          "</h4><p>" + EXPLAIN.body + "</p></div>";
+      }
+      body.innerHTML = html + renderLogHtml();
+      return;
+    }
+
+    var step = STEPS[cur], rs = results[cur] || [];
+    head.textContent = "STEP " + cur + " / " + (STEPS.length - 1);
+    html += '<div class="block"><span class="h">Step ' + cur + '</span>' +
+      '<h4 style="margin:0;font-family:var(--mono);font-size:var(--step--1);font-weight:600">' +
+      step.title + "</h4></div>";
+    html += '<div class="block"><span class="h">Why</span><p>' + step.why + "</p></div>";
+    html += '<div class="block expect"><span class="h">Expect</span><p>' + step.expect + "</p></div>";
+    html += '<div class="asserts">' + rs.map(function (r) {
+      return '<div class="assert ' + (r.ok ? "p" : "f") + '"><span class="m">[' +
+        (r.ok ? "PASS" : "FAIL") + "]</span><span>" + r.label + "</span></div>";
+    }).join("") + "</div>";
+
+    var t = tally();
+    html += '<div class="summary"><span>steps run     : ' + t.steps + "</span>" +
+      "<span>assertions    : " + t.pass + " passed, " + t.fail + " failed</span>";
+    if (cur === STEPS.length - 1) {
+      html += '<span class="result ' + (t.fail ? "fail" : "pass") + '">RESULT: ' + (t.fail ? "FAIL" : "PASS") + "</span>";
+    }
+    html += "</div>";
+    body.innerHTML = html + renderLogHtml();
+  }
+
+  function render() {
+    renderHelp(A, "help-a"); renderHelp(B, "help-b");
+    renderOps(A, "ops-a"); renderOps(B, "ops-b");
+    renderMeters(A, "meters-a"); renderMeters(B, "meters-b");
+    renderWire(A, "wire-a"); renderWire(B, "wire-b");
+    renderRail(); renderExplain();
+
+    document.getElementById("wt-count").textContent = cur < 0
+      ? "Walkthrough - not started" : "Walkthrough - step " + cur + " of " + (STEPS.length - 1);
+    document.getElementById("wt-title").textContent = cur < 0 ? "Press Next step to begin" : STEPS[cur].title;
+    document.getElementById("wt-next").disabled = cur >= STEPS.length - 1;
+    document.getElementById("wt-back").disabled = cur < 0;
+
+    Array.prototype.forEach.call(document.querySelectorAll("#ops-ctl button"), function (b) {
+      var name = b.getAttribute("data-op");
+      b.classList.toggle("on", !!A.wanted[name]);
+      b.setAttribute("aria-pressed", A.wanted[name] ? "true" : "false");
+    });
+    document.getElementById("btn-broken").disabled = !!A.status.factorial;
+  }
+
+  // ---- wiring --------------------------------------------------------------
+  document.getElementById("ops-ctl").innerHTML = OPS.map(function (o) {
+    return '<button type="button" class="op" data-op="' + o.name + '" aria-pressed="true">' +
+      '<span class="sym">' + o.sym + '</span><span class="nm">' + o.name + "</span></button>";
+  }).join("");
+
+  function freePlay(fn) {
+    return function () { fn(); if (cur >= 0) { offScript = true; } render(); };
+  }
+  document.getElementById("ops-ctl").addEventListener("click", function (ev) {
+    var b = ev.target.closest ? ev.target.closest("button[data-op]") : null;
+    if (!b) { return; }
+    var name = b.getAttribute("data-op");
+    freePlay(function () { toggle(name, !A.wanted[name]); })();
+  });
+  document.getElementById("btn-eval").addEventListener("click",
+    freePlay(function () { runExpression(document.getElementById("expr").value); }));
+  document.getElementById("expr").addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") { freePlay(function () { runExpression(ev.target.value); })(); }
+  });
+  document.getElementById("btn-broken").addEventListener("click", freePlay(loadBroken));
+  document.getElementById("btn-reset").addEventListener("click", freePlay(reset));
+
+  document.getElementById("wt-next").addEventListener("click", function () {
+    if (cur < STEPS.length - 1) { runTo(cur + 1); } render();
+  });
+  document.getElementById("wt-back").addEventListener("click", function () {
+    if (cur > 0) { runTo(cur - 1); } else { cur = -1; results = []; offScript = false; reset(); } render();
+  });
+  document.getElementById("wt-restart").addEventListener("click", function () {
+    cur = -1; results = []; offScript = false; reset(); render();
+  });
+  document.getElementById("rail").addEventListener("click", function (ev) {
+    var t = ev.target;
+    if (t && t.getAttribute && t.getAttribute("data-step") !== null) { runTo(Number(t.getAttribute("data-step"))); render(); }
+  });
+
+  reset();
+  render();
+})();
+</script>
+</body></html>                                           <!-- doc-skeleton -->

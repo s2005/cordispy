@@ -1,0 +1,1193 @@
+<!doctype html>                                          <!-- doc-skeleton -->
+<html lang="en"><head>                                   <!-- doc-skeleton -->
+<meta charset="utf-8">                                   <!-- doc-skeleton -->
+<meta name="viewport" content="width=device-width, initial-scale=1">  <!-- doc-skeleton -->
+<meta name="color-scheme" content="light dark">          <!-- doc-skeleton -->
+<!-- Standalone copy of the hosted demo. Open it directly from a clone; it needs no server and loads nothing from the network. Lines tagged doc-skeleton are the document wrapper the artifact host supplies itself, so stripping them yields the hosted version verbatim: grep -v doc-skeleton docs/demo.html --> the published fragment. -->  <!-- doc-skeleton -->
+<title>Zero Residue</title>
+<style>
+  :root {
+    --ground:      #F5F7F6;
+    --surface:     #FFFFFF;
+    --surface-sunk:#EDF1EF;
+    --ink:         #101E1B;
+    --ink-soft:    #566A64;
+    --rule:        #D9E0DD;
+    --rule-strong: #B8C4C0;
+    --accent:      #0C6B5F;
+    --accent-wash: #E2F0ED;
+    --counter:     #A24A26;
+    --counter-wash:#F7E7DF;
+    --warn:        #8A6A12;
+    --warn-wash:   #F6EEDA;
+    --shadow:      0 1px 2px rgba(16,30,27,.06), 0 8px 24px -12px rgba(16,30,27,.18);
+
+    --measure: 66ch;
+    --step--2: clamp(.68rem, .66rem + .08vw, .73rem);
+    --step--1: clamp(.78rem, .76rem + .1vw, .84rem);
+    --step-0:  clamp(1rem, .97rem + .15vw, 1.06rem);
+    --step-1:  clamp(1.18rem, 1.1rem + .35vw, 1.36rem);
+    --step-2:  clamp(1.45rem, 1.25rem + .85vw, 1.95rem);
+    --step-3:  clamp(2rem, 1.6rem + 1.9vw, 3.3rem);
+
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0C1412;
+      --surface:     #131E1B;
+      --surface-sunk:#0F1917;
+      --ink:         #E7EEEA;
+      --ink-soft:    #90A29D;
+      --rule:        #243230;
+      --rule-strong: #354643;
+      --accent:      #55C9B4;
+      --accent-wash: #10322D;
+      --counter:     #DB8B63;
+      --counter-wash:#31201A;
+      --warn:        #D9B65C;
+      --warn-wash:   #2C2616;
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #0C1412;
+    --surface:     #131E1B;
+    --surface-sunk:#0F1917;
+    --ink:         #E7EEEA;
+    --ink-soft:    #90A29D;
+    --rule:        #243230;
+    --rule-strong: #354643;
+    --accent:      #55C9B4;
+    --accent-wash: #10322D;
+    --counter:     #DB8B63;
+    --counter-wash:#31201A;
+    --warn:        #D9B65C;
+    --warn-wash:   #2C2616;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: var(--step-0);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1rem, 3.5vw, 2.25rem) 5rem; }
+  .prose { max-width: var(--measure); display: flex; flex-direction: column; gap: 1rem; }
+  .prose p { margin: 0; }
+
+  a { color: var(--accent); text-underline-offset: .18em; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: var(--step--1);
+    letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0;
+  }
+
+  /* ---------------- masthead ---------------- */
+  .masthead {
+    padding: clamp(2.5rem, 7vw, 4.5rem) 0 clamp(1.75rem, 4vw, 2.75rem);
+    border-bottom: 1px solid var(--rule);
+    display: flex; flex-direction: column; gap: 1.4rem;
+  }
+  h1 {
+    font-family: var(--mono); font-size: var(--step-3); line-height: 1.02;
+    letter-spacing: -.03em; font-weight: 500; margin: 0; text-wrap: balance;
+  }
+  h1 .zero { color: var(--accent); }
+  .standfirst {
+    font-size: var(--step-1); line-height: 1.45; color: var(--ink-soft);
+    max-width: 58ch; margin: 0; text-wrap: pretty;
+  }
+
+  section { padding-top: clamp(2.5rem, 6vw, 4rem); }
+  h2 {
+    font-family: var(--mono); font-size: var(--step-2); font-weight: 500;
+    letter-spacing: -.02em; line-height: 1.15; margin: 0 0 1rem; text-wrap: balance;
+  }
+  h3 { font-family: var(--mono); font-size: var(--step-0); font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  .section-head { display: flex; flex-direction: column; gap: .35rem; margin-bottom: 1.5rem; }
+  .section-head .eyebrow { order: -1; }
+
+  /* ---------------- buttons ---------------- */
+  button {
+    font: inherit; font-family: var(--mono); font-size: var(--step--1);
+    color: var(--ink); background: var(--surface);
+    border: 1px solid var(--rule-strong); border-radius: 2px;
+    padding: .5em .85em; cursor: pointer; line-height: 1.2;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  button.on { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+  :root[data-theme="dark"] button.on { color: #0C1412; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.on { color: #0C1412; } }
+  button.primary { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); font-weight: 600; }
+  button.danger:hover:not(:disabled) { border-color: var(--counter); color: var(--counter); }
+  button.ghost { border-style: dashed; color: var(--ink-soft); }
+
+  /* ---------------- walkthrough bar ---------------- */
+  .wt-bar {
+    border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    background: var(--surface); border-radius: 3px; box-shadow: var(--shadow);
+    padding: 1rem 1.15rem; display: flex; flex-direction: column; gap: .85rem;
+  }
+  .wt-top { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; justify-content: space-between; }
+  .wt-now { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+  .wt-count {
+    font-family: var(--mono); font-size: var(--step--2); letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .wt-title { font-family: var(--mono); font-size: var(--step-0); font-weight: 600; letter-spacing: -.01em; }
+  .wt-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+  .rail { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .chip {
+    font-family: var(--mono); font-size: var(--step--2); font-variant-numeric: tabular-nums;
+    width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--rule-strong); border-radius: 2px;
+    background: var(--surface); color: var(--ink-soft); cursor: pointer; padding: 0;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.pass { border-color: var(--accent); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+  .chip.fail { border-color: var(--counter); background: var(--counter-wash); color: var(--counter); font-weight: 600; }
+  .chip.current { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* ---------------- free play controls ----------------
+     These sit BELOW the lab: the walkthrough never uses them, so putting them
+     first made them read as the primary thing to touch. */
+  .freeplay-head {
+    margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--rule);
+    display: flex; flex-direction: column; gap: .3rem; max-width: var(--measure);
+  }
+  .freeplay-head p { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+  .controls {
+    border: 1px solid var(--rule); background: var(--surface); border-radius: 3px;
+    padding: 1rem 1.15rem; margin-top: .85rem;
+    display: flex; flex-wrap: wrap; gap: 1.1rem 1.75rem; align-items: flex-end;
+  }
+  .cgroup { display: flex; flex-direction: column; gap: .45rem; }
+  .clabel {
+    font-family: var(--mono); font-size: var(--step--2); letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .crow { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+  /* ---------------- lab layout ---------------- */
+  .lab { display: grid; gap: 1rem; margin-top: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 900px)  { .lab { grid-template-columns: 1fr 1fr; } .lab .explain { grid-column: 1 / -1; } }
+  @media (min-width: 1180px) { .lab { grid-template-columns: 1fr 1fr 22rem; } .lab .explain { grid-column: auto; } }
+
+  .pane {
+    border: 1px solid var(--rule); background: var(--surface);
+    border-radius: 3px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .pane-head {
+    padding: .8rem 1.05rem; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; justify-content: space-between; gap: .75rem;
+    background: var(--surface-sunk);
+  }
+  .pane-head .who { font-family: var(--mono); font-size: var(--step--1); font-weight: 600; letter-spacing: .02em; }
+  .pane-head .tag { font-family: var(--mono); font-size: var(--step--2); color: var(--ink-soft); text-align: right; }
+  .pane.a .pane-head { border-bottom-color: var(--accent); }
+  .pane.b .pane-head { border-bottom-color: var(--counter); }
+  .pane.a .who { color: var(--accent); }
+  .pane.b .who { color: var(--counter); }
+
+  .pane-body { padding: 1.05rem; display: flex; flex-direction: column; gap: 1.05rem; }
+
+  .states { display: flex; flex-direction: column; gap: .4rem; }
+  .state-row {
+    display: grid; grid-template-columns: 5.5rem 1fr; gap: .7rem; align-items: baseline;
+    font-family: var(--mono); font-size: var(--step--1);
+  }
+  .state-row .k { color: var(--ink-soft); }
+  .state-row .v { display: flex; flex-wrap: wrap; gap: .35rem; align-items: baseline; }
+  .badge {
+    display: inline-block; padding: .18em .5em; border-radius: 2px;
+    border: 1px solid var(--rule-strong); font-size: var(--step--2);
+    letter-spacing: .06em; font-weight: 600;
+  }
+  .badge.ok    { color: var(--accent);  border-color: var(--accent);  background: var(--accent-wash); }
+  .badge.bad   { color: var(--counter); border-color: var(--counter); background: var(--counter-wash); }
+  .badge.wait  { color: var(--warn);    border-color: var(--warn);    background: var(--warn-wash); }
+  .badge.off   { color: var(--ink-soft); }
+  .state-row .note { font-size: var(--step--2); color: var(--ink-soft); }
+
+  .meters { display: flex; flex-direction: column; border-top: 1px solid var(--rule); }
+  .meter {
+    display: grid; grid-template-columns: 1fr 3.2rem 3.2rem;
+    gap: .5rem; align-items: center; padding: .48rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: var(--step--1); font-variant-numeric: tabular-nums;
+  }
+  .meter .lab2 { color: var(--ink-soft); font-size: var(--step--2); letter-spacing: .04em; text-transform: uppercase; }
+  .meter .live { text-align: right; }
+  .meter .leak { text-align: right; font-weight: 600; color: var(--ink-soft); opacity: .4; }
+  .meter.leaking .leak { color: var(--counter); opacity: 1; }
+  .meters-head {
+    display: grid; grid-template-columns: 1fr 3.2rem 3.2rem; gap: .5rem;
+    font-family: var(--mono); font-size: var(--step--2); letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-soft); padding-bottom: .35rem;
+  }
+  .meters-head .live, .meters-head .leak { text-align: right; }
+
+  .residue-line {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    padding-top: .85rem; border-top: 1px solid var(--rule-strong);
+  }
+  .residue-line .cap {
+    font-family: var(--mono); font-size: var(--step--2); letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .residue-num {
+    font-family: var(--mono); font-size: var(--step-2); font-weight: 600;
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .residue-num.clean { color: var(--accent); }
+  .residue-num.dirty { color: var(--counter); }
+
+  .wire {
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.5;
+    background: var(--surface-sunk); border: 1px solid var(--rule);
+    border-radius: 2px; padding: .55rem .65rem; overflow-x: auto; white-space: pre-wrap;
+    word-break: break-word; min-height: 3.4rem;
+  }
+  .wire .ok  { color: var(--accent); }
+  .wire .err { color: var(--counter); }
+  .wire .dim { color: var(--ink-soft); }
+
+  /* ---------------- walkthrough pane ---------------- */
+  .explain .pane-head { border-bottom-color: var(--rule-strong); }
+  .explain .pane-body { gap: .85rem; }
+  .block { display: flex; flex-direction: column; gap: .25rem; }
+  .block .h {
+    font-family: var(--mono); font-size: var(--step--2); letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .block p { margin: 0; font-size: var(--step--1); line-height: 1.55; color: var(--ink-soft); }
+  .block p strong { color: var(--ink); font-weight: 600; }
+  .block.expect p { color: var(--ink); }
+
+  .asserts { display: flex; flex-direction: column; gap: .2rem; padding-top: .2rem; }
+  .assert {
+    display: grid; grid-template-columns: 3.6rem 1fr; gap: .5rem;
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.45;
+  }
+  .assert .m { font-weight: 600; }
+  .assert.p .m { color: var(--accent); }
+  .assert.f .m { color: var(--counter); }
+
+  .summary {
+    border-top: 1px solid var(--rule-strong); padding-top: .75rem;
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.6;
+    display: flex; flex-direction: column; gap: .1rem; color: var(--ink-soft);
+  }
+  .summary .result { font-size: var(--step--1); font-weight: 600; margin-top: .3rem; }
+  .summary .result.pass { color: var(--accent); }
+  .summary .result.fail { color: var(--counter); }
+
+  .offscript {
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.5;
+    border: 1px dashed var(--warn); background: var(--warn-wash); color: var(--warn);
+    border-radius: 2px; padding: .5rem .6rem;
+  }
+
+  .log {
+    display: flex; flex-direction: column; gap: .28rem;
+    border-top: 1px solid var(--rule); padding-top: .7rem;
+    max-height: 13rem; overflow-y: auto;
+    font-family: var(--mono); font-size: var(--step--2); line-height: 1.45;
+  }
+  .log div { display: grid; grid-template-columns: 3.6rem 1fr; gap: .5rem; }
+  .log .src { letter-spacing: .04em; }
+  .log .a-src { color: var(--accent); }
+  .log .b-src { color: var(--counter); }
+
+  .calib {
+    margin-top: 1rem; font-size: var(--step--1); color: var(--ink-soft);
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; max-width: var(--measure);
+  }
+  .calib .dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--rule-strong); flex: none; }
+  .calib.hit .dot { background: var(--accent); }
+  .calib.hit { color: var(--accent); }
+
+  .split { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
+  .mech {
+    border: 1px solid var(--rule); background: var(--surface); border-radius: 3px;
+    padding: 1.4rem; display: flex; flex-direction: column; gap: .9rem;
+  }
+  .mech p { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+
+  .cmds { display: flex; flex-direction: column; gap: .55rem; margin-top: 1.25rem; }
+  .cmd {
+    font-family: var(--mono); font-size: var(--step--1);
+    background: var(--surface-sunk); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); border-radius: 2px;
+    padding: .75rem .95rem; overflow-x: auto; white-space: pre; color: var(--ink);
+  }
+  .cmd .c { color: var(--ink-soft); }
+
+  .foot {
+    margin-top: clamp(2.5rem, 6vw, 4rem); padding-top: 1.4rem;
+    border-top: 1px solid var(--rule); max-width: var(--measure);
+    font-size: var(--step--1); color: var(--ink-soft);
+  }
+</style>
+</head><body>                                            <!-- doc-skeleton -->
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">cordispy &middot; interactive model of examples/run_benefit.py</p>
+    <h1>What a component<br>leaves behind: <span class="zero">zero</span></h1>
+    <p class="standfirst">
+      One application, built twice &mdash; on the cordis runtime and on a conventional plugin registry.
+      Step through the walkthrough, or drive them yourself, and watch where they stop agreeing.
+    </p>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">The lab</p>
+      <h2>Both runtimes receive every action you take</h2>
+    </div>
+    <div class="prose">
+      <p>
+        The component under test is <code>tool_kv</code>. It mounts routes and opens a journal connection
+        when it loads &mdash; and it opens a sqlite connection per key shard, arms a compaction timer and
+        subscribes a tracer <em>while serving a request</em>, long after <code>setup()</code> returned.
+        That last part is the whole experiment.
+      </p>
+    </div>
+
+    <div class="wt-bar" style="margin-top:1.5rem">
+      <div class="wt-top">
+        <div class="wt-now">
+          <span class="wt-count" id="wt-count">Walkthrough &middot; not started</span>
+          <span class="wt-title" id="wt-title">Press Next step to begin</span>
+        </div>
+        <div class="wt-actions">
+          <button type="button" id="wt-back">Back</button>
+          <button type="button" id="wt-next" class="primary">Next step</button>
+          <button type="button" id="wt-restart" class="ghost">Restart</button>
+        </div>
+      </div>
+      <div class="rail" id="rail"></div>
+    </div>
+
+    <div class="lab">
+
+      <article class="pane a">
+        <div class="pane-head">
+          <span class="who">CORDIS</span>
+          <span class="tag">effects on a fiber</span>
+        </div>
+        <div class="pane-body">
+          <div class="states" id="states-a"></div>
+          <div>
+            <div class="meters-head"><span>resource</span><span class="live">live</span><span class="leak">leaked</span></div>
+            <div class="meters" id="meters-a"></div>
+          </div>
+          <div class="residue-line">
+            <span class="cap">total residue</span>
+            <span class="residue-num clean" id="residue-a">0</span>
+          </div>
+          <div class="wire" id="wire-a"></div>
+        </div>
+      </article>
+
+      <article class="pane b">
+        <div class="pane-head">
+          <span class="who">CONVENTIONAL REGISTRY</span>
+          <span class="tag">setup() / teardown()</span>
+        </div>
+        <div class="pane-body">
+          <div class="states" id="states-b"></div>
+          <div>
+            <div class="meters-head"><span>resource</span><span class="live">live</span><span class="leak">leaked</span></div>
+            <div class="meters" id="meters-b"></div>
+          </div>
+          <div class="residue-line">
+            <span class="cap">total residue</span>
+            <span class="residue-num clean" id="residue-b">0</span>
+          </div>
+          <div class="wire" id="wire-b"></div>
+        </div>
+      </article>
+
+      <article class="pane explain">
+        <div class="pane-head">
+          <span class="who" id="explain-head">WALKTHROUGH</span>
+        </div>
+        <div class="pane-body" id="explain-body"></div>
+      </article>
+
+    </div>
+
+    <p class="calib" id="calib">
+      <span class="dot"></span>
+      <span id="calib-text">Reach the state that <code>--scenario residue</code> measures to check the model against the real run.</span>
+    </p>
+
+    <div class="freeplay-head">
+      <span class="eyebrow">Free play</span>
+      <p>Drive the two runtimes yourself. The walkthrough above never touches these controls, so
+      anything you change here is your own experiment - press Restart to put the walkthrough back in
+      charge.</p>
+    </div>
+
+    <div class="controls">
+      <div class="cgroup">
+        <span class="clabel">store provider</span>
+        <div class="crow" id="provider-ctl">
+          <button type="button" data-provider="none">none</button>
+          <button type="button" data-provider="memory">memory</button>
+          <button type="button" data-provider="sqlite">sqlite</button>
+        </div>
+      </div>
+
+      <div class="cgroup">
+        <span class="clabel">tool_kv</span>
+        <div class="crow">
+          <button type="button" id="btn-compose">compose</button>
+          <button type="button" id="btn-retire" class="danger">retire</button>
+        </div>
+      </div>
+
+      <div class="cgroup">
+        <span class="clabel">traffic</span>
+        <div class="crow">
+          <button type="button" id="btn-serve">serve workload</button>
+          <button type="button" id="btn-read">read back "alpha"</button>
+        </div>
+      </div>
+
+      <div class="cgroup">
+        <span class="clabel">a component that raises mid-load</span>
+        <div class="crow">
+          <button type="button" id="btn-broken" class="danger">load broken tool</button>
+          <button type="button" id="btn-hit-broken">request /broken/go</button>
+        </div>
+      </div>
+
+      <div class="cgroup">
+        <span class="clabel">&nbsp;</span>
+        <div class="crow"><button type="button" id="btn-reset" class="ghost">reset</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Why it diverges</p>
+      <h2>Two mechanisms, and neither is a cleanup checklist</h2>
+    </div>
+
+    <div class="split">
+      <article class="mech">
+        <p class="eyebrow">Effects</p>
+        <h3>The undo is written where the do is</h3>
+        <p>
+          An effect is a pair &mdash; acquire this, and here is how to give it back &mdash; recorded on the
+          fiber rather than on the call that ran it. An effect created inside a request handler lands on
+          the same accumulator as one created at load time, so unloading reverses both. Recovery is
+          last-applied-first and happens at most once.
+        </p>
+        <p>
+          The registry&rsquo;s <code>teardown()</code> is a method whose author knew only what
+          <code>setup()</code> did. It pops the two routes it mounted and closes the journal it opened.
+          It cannot know about the <code>/kv</code> index route the mount helper added on its behalf, and
+          it certainly cannot know about a connection opened by a request that had not happened yet.
+        </p>
+      </article>
+
+      <article class="mech">
+        <p class="eyebrow">Coeffects</p>
+        <h3>Declare the need, don&rsquo;t fetch the thing</h3>
+        <p>
+          <code>tool_kv</code> reads <code>ctx.store</code> once and holds it for its whole life. In a
+          conventional system that cached reference is a bug waiting for the provider to be replaced.
+          Here it is correct, because replacing the provider changes the fiber&rsquo;s target, which
+          unloads the component and loads it again &mdash; with a fresh read.
+        </p>
+        <p>
+          That is also why a component the runtime can activate is one it can deactivate. Set the
+          provider to <strong>none</strong> and watch one side go quiet and give everything back, while
+          the other keeps reporting itself registered and healthy right up until the next request.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Run it for real</p>
+      <h2>This page models it; these commands measure it</h2>
+    </div>
+    <div class="prose">
+      <p>
+        The walkthrough above is modelled on <code>tests/UAT/benefit.sh</code>, which runs the same
+        sequence against the real runtime and asserts each step. There the counts come from a live
+        process: pending tasks are <code>asyncio.all_tasks()</code> set differences, a connection counts
+        as open only if it still answers <code>select 1</code>, and routes and subscribers are read off
+        the actual dispatcher and bus.
+      </p>
+    </div>
+    <div class="cmds">
+      <div class="cmd" tabindex="0">./tests/UAT/benefit.sh            <span class="c"># step through it, one keypress per step</span></div>
+      <div class="cmd" tabindex="0">./tests/UAT/benefit.sh --auto     <span class="c"># run it unattended and print a verdict</span></div>
+      <div class="cmd" tabindex="0">uv run python examples/run_benefit.py --scenario all</div>
+    </div>
+  </section>
+
+  <p class="foot">
+    cordispy is a Python realization of the runtime described in <em>A Programming Paradigm for
+    Spatiotemporal Composability</em> (Shi, Zhang, Cui). The conventional side is a faithful
+    implementation of the design most plugin systems converge on &mdash; no missing cleanup call and no
+    planted bug; its <code>teardown()</code> undoes exactly what its <code>setup()</code> did. See
+    <code>examples/naive/</code>, <code>docs/benefits.md</code>, and <code>tests/UAT/</code>.
+  </p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // The application already running before tool_kv is composed: the dispatcher,
+  // the echo tool, the audit trail, the timer. Taken from the real demo's
+  // baseline, Snapshot(routes=2, subscribers=1, connections=1, tasks=2).
+  var BASE = { routes: 2, subs: 1, conns: 1, tasks: 2 };
+  var WORKLOAD = [["alpha", "1"], ["beta", "2"], ["gamma", "3"]];
+
+  var RESOURCES = [
+    { key: "routes", label: "route handlers" },
+    { key: "subs",   label: "event subscribers" },
+    { key: "conns",  label: "sqlite connections" },
+    { key: "tasks",  label: "asyncio tasks" }
+  ];
+
+  function blankOwned() { return { routes: 0, subs: 0, conns: 0, tasks: 0 }; }
+
+  function freshSide() {
+    return {
+      provider: "memory",
+      providerConns: 0,
+      data: { memory: {}, sqlite: {} },
+      kv: { status: "absent", bound: null, boundClosed: false, owned: blankOwned(), shards: {}, traced: {} },
+      leaked: blankOwned(),
+      broken: { status: "absent", routes: 0 },
+      wire: []
+    };
+  }
+
+  var A, B, LOG, EXPLAIN;
+
+  function live(s, key) {
+    return BASE[key] + s.kv.owned[key] + s.leaked[key] +
+      (key === "conns" ? s.providerConns : 0) +
+      (key === "routes" ? s.broken.routes : 0);
+  }
+  function counts(s) { return [live(s, "routes"), live(s, "subs"), live(s, "conns"), live(s, "tasks")]; }
+  function residue(s) { return s.leaked.routes + s.leaked.subs + s.leaked.conns + s.leaked.tasks + s.broken.routes; }
+  function kvServing(s) { return s.kv.status === "active" || s.kv.status === "registered"; }
+  function lastWire(s) { return s.wire.length ? s.wire[0].text : ""; }
+  function same(x, y) { return x.length === y.length && x.every(function (v, i) { return v === y[i]; }); }
+
+  function log(src, text) { LOG.unshift({ src: src, text: text }); if (LOG.length > 60) { LOG.pop(); } }
+  function wire(s, cls, text) { s.wire.unshift({ cls: cls, text: text }); if (s.wire.length > 4) { s.wire.pop(); } }
+
+  // ------------------------------------------------------ runtime behaviour
+
+  function cordisLoad() {
+    A.kv.status = "active";
+    A.kv.bound = A.provider;
+    A.kv.owned = { routes: 3, subs: 0, conns: 1, tasks: 1 };
+    A.kv.shards = {}; A.kv.traced = {};
+    log("cordis", "target resolved -> ACTIVE; 3 routes, 1 connection, 1 task, all as effects");
+  }
+  function cordisUnload(nextStatus) {
+    if (A.kv.status !== "active") { A.kv.status = nextStatus; return; }
+    A.kv.owned = blankOwned(); A.kv.shards = {}; A.kv.traced = {};
+    A.kv.bound = null; A.kv.status = nextStatus;
+    log("cordis", "unload reversed every effect on the fiber - residue 0");
+  }
+  function registrySetup() {
+    B.kv.status = "registered";
+    B.kv.bound = B.provider; B.kv.boundClosed = false;
+    B.kv.owned = { routes: 3, subs: 0, conns: 1, tasks: 1 };
+    B.kv.shards = {}; B.kv.traced = {};
+    log("registry", "setup() ran -> REGISTERED; store reference cached for the component's life");
+  }
+  function registryTeardown() {
+    var o = B.kv.owned;
+    var left = {
+      routes: Math.max(0, o.routes - 2),   // the /kv index route the helper added
+      subs:   o.subs,                      // tracer subscriptions
+      conns:  Math.max(0, o.conns - 1),    // shard connections
+      tasks:  Math.max(0, o.tasks - 1)     // deferred flushes
+    };
+    B.leaked.routes += left.routes; B.leaked.subs += left.subs;
+    B.leaked.conns += left.conns;   B.leaked.tasks += left.tasks;
+    B.kv.owned = blankOwned(); B.kv.shards = {}; B.kv.traced = {};
+    B.kv.bound = null; B.kv.boundClosed = false; B.kv.status = "absent";
+    return left;
+  }
+
+  // ------------------------------------------------------------- actions
+
+  function setProvider(next) {
+    var previous = A.provider;
+    if (previous === next) { return; }
+
+    A.provider = next;
+    A.providerConns = next === "sqlite" ? 1 : 0;
+    if (previous !== "none") { log("cordis", "provider " + previous + " retired; its own connection closed"); }
+    if (A.kv.status === "active") { cordisUnload("pending"); }
+    if (next !== "none" && (A.kv.status === "pending" || A.kv.status === "inactive")) {
+      cordisLoad();
+      log("cordis", "tool_kv re-read ctx.store and is serving on " + next);
+    } else if (next === "none" && A.kv.status === "pending") {
+      log("cordis", "no provider -> tool_kv is PENDING, waiting rather than failing");
+    }
+
+    B.provider = next;
+    B.providerConns = next === "sqlite" ? 1 : 0;
+    if (B.kv.status === "registered") {
+      B.kv.boundClosed = true;
+      log("registry", "store entry replaced; tool_kv still holds the closed " + B.kv.bound + " store");
+    }
+
+    if (next === "none") {
+      EXPLAIN = { title: "The provider was withdrawn", body:
+        "<strong>cordis</strong> saw the required key lose its provider, so tool_kv&rsquo;s target became " +
+        "undefined and the runtime unloaded it &mdash; everything it held was given back on the way out. " +
+        "It sits at PENDING. <strong>The registry</strong> has no idea: tool_kv is still REGISTERED, still " +
+        "holding a reference to a store that is now closed." };
+    } else if (previous === "none") {
+      EXPLAIN = { title: "A provider arrived", body:
+        "<strong>cordis</strong> activates any component whose declarations are now satisfied. " +
+        "<strong>The registry</strong> resolves dependencies only inside <code>setup()</code>, which " +
+        "already ran or already failed." };
+    } else {
+      EXPLAIN = { title: "Provider swapped, " + previous + " to " + next, body:
+        "Both sides now report " + next + ", so a health check calls both fine. <strong>cordis</strong> " +
+        "unloaded tool_kv and loaded it again against the new binding, so its cached <code>ctx.store</code> " +
+        "is fresh. <strong>The registry</strong> never re-ran <code>setup()</code>." };
+    }
+  }
+
+  function compose() {
+    if (A.kv.status === "active") { log("cordis", "tool_kv already active"); }
+    else if (A.provider === "none") { A.kv.status = "pending"; log("cordis", "composed with no provider -> PENDING"); }
+    else { cordisLoad(); }
+
+    if (B.kv.status === "registered") { log("registry", "tool_kv already registered"); }
+    else if (B.provider === "none") {
+      B.kv.status = "absent";
+      wire(B, "err", "MissingDependencyError: no service registered for 'store'");
+      log("registry", "register() raised MissingDependencyError - and will not be retried");
+    } else { registrySetup(); }
+
+    EXPLAIN = A.provider === "none"
+      ? { title: "Composed before its dependency existed", body:
+          "<strong>cordis</strong> holds tool_kv at PENDING &mdash; a component whose declarations are not " +
+          "yet satisfied is a waiting component, not an error. <strong>The registry</strong> resolved " +
+          "<code>store</code> inside <code>setup()</code>, found nothing, and raised. It does not retry." }
+      : { title: "tool_kv loaded on both sides", body:
+          "Identical work: three routes (<code>/kv/put</code>, <code>/kv/get</code>, and the " +
+          "<code>/kv</code> index the mount helper adds), one journal connection, one heartbeat task." };
+  }
+
+  function retire() {
+    var hadA = A.kv.status !== "absent";
+    var hadB = B.kv.status === "registered";
+    cordisUnload("absent");
+    A.kv.status = "absent";
+
+    var left = hadB ? registryTeardown() : null;
+    if (!hadB) { B.kv.status = "absent"; }
+    var total = left ? left.routes + left.subs + left.conns + left.tasks : 0;
+    if (left) {
+      log("registry", "teardown() undid 2 routes, the heartbeat and the journal - " + total + " resources survived it");
+    }
+
+    EXPLAIN = (!hadA && !hadB)
+      ? { title: "Nothing to retire", body: "tool_kv was not composed on either side." }
+      : { title: "tool_kv retired", body:
+          "<strong>cordis</strong> walked the fiber&rsquo;s accumulator backwards and reversed every effect, " +
+          "whenever it was created &mdash; load time and request time alike. <strong>The registry</strong> ran " +
+          "a <code>teardown()</code> that undoes what <code>setup()</code> did: two routes, the heartbeat, " +
+          "the journal. It never knew about the <code>/kv</code> index route, and could not know about " +
+          "anything a request opened after it was written. " +
+          (total ? "That is the " + total + " still in the process."
+                 : "Nothing extra had been acquired, so nothing leaked.") };
+  }
+
+  function serve() {
+    if (A.kv.status !== "active") {
+      wire(A, "err", "RouteError: no route mounted at '/kv/put'");
+      log("cordis", "request refused: tool_kv is not active, so its routes are not mounted");
+    } else {
+      var oA = 0, tA = 0, sA = 0;
+      WORKLOAD.forEach(function (p) {
+        var shard = "shard:" + p[0].charAt(0);
+        if (!A.kv.shards[shard]) { A.kv.shards[shard] = true; A.kv.owned.conns += 1; oA += 1; }
+        A.kv.owned.tasks += 1; tA += 1;
+        A.data[A.provider][p[0]] = p[1];
+        if (!A.kv.traced["/kv/put"]) { A.kv.traced["/kv/put"] = true; A.kv.owned.subs += 1; sA += 1; }
+      });
+      if (!A.kv.traced["/kv/get"]) { A.kv.traced["/kv/get"] = true; A.kv.owned.subs += 1; sA += 1; }
+      wire(A, "ok", "{'stored': 'gamma', 'backend': '" + A.provider + "'}");
+      log("cordis", "served 3 writes and a read; " + oA + " shard connections, " + tA + " flush timers, " +
+        sA + " tracers - all effects on the fiber");
+    }
+
+    if (B.kv.status !== "registered") {
+      wire(B, "err", "RouteError: no route mounted at '/kv/put'");
+      log("registry", "request refused: tool_kv is not registered");
+    } else if (B.kv.boundClosed) {
+      wire(B, "err", "StoreClosedError: the " + B.kv.bound + " store has been closed by its provider");
+      log("registry", "the cached store reference is closed - the write cannot be served");
+    } else {
+      var oB = 0, tB = 0, sB = 0;
+      WORKLOAD.forEach(function (p) {
+        var shard = "shard:" + p[0].charAt(0);
+        if (!B.kv.shards[shard]) { B.kv.shards[shard] = true; B.kv.owned.conns += 1; oB += 1; }
+        B.kv.owned.tasks += 1; tB += 1;
+        B.data[B.kv.bound][p[0]] = p[1];
+        if (!B.kv.traced["/kv/put"]) { B.kv.traced["/kv/put"] = true; B.kv.owned.subs += 1; sB += 1; }
+      });
+      if (!B.kv.traced["/kv/get"]) { B.kv.traced["/kv/get"] = true; B.kv.owned.subs += 1; sB += 1; }
+      wire(B, "ok", "{'stored': 'gamma', 'backend': '" + B.kv.bound + "'}");
+      log("registry", "served the same workload; " + oB + " shard connections, " + tB + " flush timers, " +
+        sB + " tracers - held in the component's own dictionaries");
+    }
+
+    EXPLAIN = { title: "The workload ran", body:
+      "Three writes and a read. Each write opens a sqlite connection for its key shard, arms a deferred " +
+      "compaction timer, and the first request on each path subscribes a tracer. All of it happens " +
+      "<strong>after <code>setup()</code> returned</strong>. On cordis those are effects on the " +
+      "fiber&rsquo;s accumulator. On the registry they live in the component&rsquo;s own dictionaries." };
+  }
+
+  function readBack() {
+    if (A.kv.status !== "active") { wire(A, "err", "RouteError: no route mounted at '/kv/get'"); }
+    else {
+      var v = A.data[A.provider].alpha;
+      wire(A, v === undefined ? "dim" : "ok", "{'key': 'alpha', 'value': " +
+        (v === undefined ? "None" : "'" + v + "'") + ", 'backend': '" + A.provider + "'}");
+    }
+    if (B.kv.status !== "registered") { wire(B, "err", "RouteError: no route mounted at '/kv/get'"); }
+    else if (B.kv.boundClosed) {
+      wire(B, "err", "StoreClosedError: the " + B.kv.bound + " store has been closed by its provider");
+    } else {
+      var w = B.data[B.kv.bound].alpha;
+      wire(B, w === undefined ? "dim" : "ok", "{'key': 'alpha', 'value': " +
+        (w === undefined ? "None" : "'" + w + "'") + ", 'backend': '" + B.kv.bound + "'}");
+    }
+    EXPLAIN = { title: "Read back a key written before the swap", body:
+      "<strong>cordis</strong> answers <code>None</code> from the new backend &mdash; correct, because the " +
+      "swap moved the component to a genuinely different store. <strong>The registry</strong> raises " +
+      "<code>StoreClosedError</code>: the reference it cached points at something closed underneath it." };
+  }
+
+  function loadBroken() {
+    A.broken.status = "failed"; A.broken.routes = 0;
+    log("cordis", "tool_broken raised mid-load; the 2 routes it had mounted were rolled back -> FAILED");
+    B.broken.status = "absent"; B.broken.routes = 2;
+    log("registry", "tool_broken raised mid-load; the error was logged and its 2 routes stayed mounted");
+    EXPLAIN = { title: "A component raised halfway through loading", body:
+      "By the time it raised it had already mounted two routes. <strong>cordis</strong> rolled back the " +
+      "inverses accumulated up to the failure and recorded FAILED, with the error retained. " +
+      "<strong>The registry</strong> logged the exception and left both routes mounted." };
+  }
+
+  function hitBroken() {
+    wire(A, A.broken.routes ? "ok" : "err",
+      A.broken.routes ? "'unreachable'" : "RouteError: no route mounted at '/broken/go'");
+    wire(B, B.broken.routes ? "ok" : "err",
+      B.broken.routes ? "'unreachable'" : "RouteError: no route mounted at '/broken/go'");
+    EXPLAIN = { title: "Requesting the failed component's route", body: B.broken.routes
+      ? "<strong>cordis</strong> has no such route &mdash; the rollback took it down with everything else " +
+        "the component had done. <strong>The registry</strong> answers, from a component it knows failed " +
+        "to load. That is a half-initialised handler serving traffic."
+      : "Neither side has that route mounted. Load the broken tool first." };
+  }
+
+  function reset() {
+    A = freshSide(); B = freshSide(); LOG = [];
+    EXPLAIN = { title: "Reset", body: "Both applications are back to baseline, with the memory store selected." };
+  }
+
+  // ------------------------------------------------------------ walkthrough
+  //
+  // Modelled on tests/UAT/benefit.sh: each step states why it exists and what to
+  // expect, performs one action on BOTH runtimes, then asserts against the live
+  // model - the assertions are computed, not written down.
+
+  function A_(label, ok) { return { label: label, ok: !!ok }; }
+
+  var STEPS = [
+    {
+      title: "Preflight - two identical applications",
+      why: "Both runtimes start from the same baseline, so every difference later on is caused by the runtime and not by different starting conditions.",
+      expect: "2 routes, 1 subscriber, 1 connection and 2 tasks on both sides, and no residue anywhere.",
+      run: function () { reset(); },
+      check: function () { return [
+        A_("cordis baseline is 2 / 1 / 1 / 2", same(counts(A), [2, 1, 1, 2])),
+        A_("registry baseline is 2 / 1 / 1 / 2", same(counts(B), [2, 1, 1, 2])),
+        A_("no residue on either side", residue(A) === 0 && residue(B) === 0)
+      ]; }
+    },
+    {
+      title: "Compose tool_kv over the memory store",
+      why: "The component loads identically on both sides: three routes, a journal connection and a heartbeat task. Nothing has diverged yet, and that is the point - the two designs are indistinguishable until something is asked of them.",
+      expect: "ACTIVE on cordis and REGISTERED on the registry, 5 routes live on both, residue still 0.",
+      run: function () { compose(); },
+      check: function () { return [
+        A_("cordis reports ACTIVE", A.kv.status === "active"),
+        A_("registry reports REGISTERED", B.kv.status === "registered"),
+        A_("both mounted 3 routes (5 live)", live(A, "routes") === 5 && live(B, "routes") === 5),
+        A_("no residue yet on either side", residue(A) === 0 && residue(B) === 0)
+      ]; }
+    },
+    {
+      title: "Serve the workload - three writes and a read",
+      why: "Each write opens a sqlite connection for its key shard and arms a compaction timer, and the first request on each path subscribes a tracer. All of it happens after setup() returned, which is the one place a hand-written teardown could have recorded it.",
+      expect: "identical counts on both sides: 5 routes, 3 subscribers, 5 connections, 6 tasks - the 13 resources the component acquired.",
+      run: function () { serve(); },
+      check: function () { return [
+        A_("cordis is at 5 / 3 / 5 / 6", same(counts(A), [5, 3, 5, 6])),
+        A_("registry is at 5 / 3 / 5 / 6", same(counts(B), [5, 3, 5, 6])),
+        A_("both did identical work", same(counts(A), counts(B))),
+        A_("still no residue on either side", residue(A) === 0 && residue(B) === 0)
+      ]; }
+    },
+    {
+      title: "Retire tool_kv - the divergence",
+      why: "Both sides acquired the same 13 resources, so what separates them now is not what they did but what they released. cordis reverses every effect on the fiber; the registry runs a teardown() that undoes what its setup() did and nothing else.",
+      expect: "cordis back to baseline with residue 0; the registry holding 9 - one route, two subscribers, three connections and three tasks.",
+      run: function () { retire(); },
+      check: function () { return [
+        A_("cordis residue is 0", residue(A) === 0),
+        A_("cordis is back to baseline", same(counts(A), [2, 1, 1, 2])),
+        A_("registry residue is 9", residue(B) === 9),
+        A_("the /kv index route survived", B.leaked.routes === 1),
+        A_("2 tracer subscriptions survived", B.leaked.subs === 2),
+        A_("3 shard connections survived", B.leaked.conns === 3),
+        A_("3 deferred flush tasks survived", B.leaked.tasks === 3)
+      ]; }
+    },
+    {
+      title: "Rebuild, then swap the provider underneath",
+      why: "A fresh application, exercised, and then the store provider is replaced while the consumer is live. Both registries report the new sqlite provider afterwards, so a status check calls both healthy.",
+      expect: "both report sqlite; cordis has reloaded tool_kv against the new binding, the registry still holds the closed memory store.",
+      run: function () { reset(); compose(); serve(); setProvider("sqlite"); },
+      check: function () { return [
+        A_("both report the sqlite provider", A.provider === "sqlite" && B.provider === "sqlite"),
+        A_("cordis reloaded the consumer (ACTIVE)", A.kv.status === "active" && A.kv.bound === "sqlite"),
+        A_("registry still says REGISTERED", B.kv.status === "registered"),
+        A_("but it holds the closed memory store", B.kv.boundClosed === true && B.kv.bound === "memory"),
+        A_("cordis carried no residue through the swap", residue(A) === 0)
+      ]; }
+    },
+    {
+      title: "Send a write after the swap",
+      why: "The swap looked clean on both sides. This is the request that decides whether it was - the registry's consumer cached its store reference in setup(), and nothing re-ran setup().",
+      expect: "cordis serves the write on sqlite; the registry raises StoreClosedError.",
+      run: function () { serve(); },
+      check: function () { return [
+        A_("cordis served the write on sqlite", /'backend': 'sqlite'/.test(lastWire(A))),
+        A_("registry raised StoreClosedError", /StoreClosedError/.test(lastWire(B))),
+        A_("cordis residue is still 0", residue(A) === 0)
+      ]; }
+    },
+    {
+      title: "Compose a consumer before its provider exists",
+      why: "Composition order is a fact of life in any real application. A consumer whose dependency has not arrived yet is either a waiting component or a hard failure, and which one decides whether load order is something you have to get right by hand.",
+      expect: "cordis holds tool_kv at PENDING with nothing mounted; the registry raises MissingDependencyError and stays ABSENT.",
+      run: function () { reset(); setProvider("none"); compose(); },
+      check: function () { return [
+        A_("cordis holds it at PENDING", A.kv.status === "pending"),
+        A_("cordis mounted nothing", same(counts(A), [2, 1, 1, 2])),
+        A_("registry raised MissingDependencyError", /MissingDependencyError/.test(lastWire(B))),
+        A_("registry left it ABSENT", B.kv.status === "absent")
+      ]; }
+    },
+    {
+      title: "The provider finally arrives",
+      why: "cordis activates any component whose declarations have become satisfied. The registry resolved its dependency inside setup(), which already raised, and it does not retry.",
+      expect: "cordis activates tool_kv by itself and mounts its routes; the registry is still ABSENT with nothing mounted.",
+      run: function () { setProvider("memory"); },
+      check: function () { return [
+        A_("cordis activated it by itself", A.kv.status === "active"),
+        A_("cordis mounted its 3 routes", live(A, "routes") === 5),
+        A_("registry is still ABSENT", B.kv.status === "absent"),
+        A_("registry mounted nothing", same(counts(B), [2, 1, 1, 2]))
+      ]; }
+    },
+    {
+      title: "A component that raises mid-load",
+      why: "By the time it raises, it has already mounted two routes. Rolling back the inverses accumulated up to the failure is what keeps a half-loaded component from serving traffic.",
+      expect: "cordis records FAILED with 0 routes left behind; the registry logs the error and leaves 2 routes mounted.",
+      run: function () { reset(); loadBroken(); },
+      check: function () { return [
+        A_("cordis recorded FAILED", A.broken.status === "failed"),
+        A_("cordis left 0 routes behind", A.broken.routes === 0 && residue(A) === 0),
+        A_("registry left 2 routes mounted", B.broken.routes === 2),
+        A_("registry residue is 2", residue(B) === 2)
+      ]; }
+    },
+    {
+      title: "Request the failed component's route",
+      why: "The last question is whether any of that is reachable. A route mounted by a component that never finished loading is a half-initialised handler, and it is answering requests.",
+      expect: "cordis returns RouteError - the route is gone; the registry answers the request.",
+      run: function () { hitBroken(); },
+      check: function () { return [
+        A_("cordis has no such route", /RouteError/.test(lastWire(A))),
+        A_("the registry answers it", /unreachable/.test(lastWire(B)))
+      ]; }
+    }
+  ];
+
+  var cur = -1;          // index of the last step run; -1 = not started
+  var results = [];      // per-step assertion arrays
+  var offScript = false; // a free-play action was taken after the walkthrough started
+
+  function runTo(n) {
+    reset();
+    results = [];
+    for (var i = 0; i <= n; i++) {
+      STEPS[i].run();
+      results[i] = STEPS[i].check();
+    }
+    cur = n;
+    offScript = false;
+  }
+  function next() { if (cur < STEPS.length - 1) { runTo(cur + 1); } }
+  function back() { if (cur > 0) { runTo(cur - 1); } else if (cur === 0) { restart(); } }
+  function restart() { cur = -1; results = []; offScript = false; reset(); }
+
+  function tally() {
+    var pass = 0, fail = 0;
+    results.forEach(function (rs) {
+      rs.forEach(function (r) { if (r.ok) { pass += 1; } else { fail += 1; } });
+    });
+    return { pass: pass, fail: fail, steps: results.length };
+  }
+
+  // ------------------------------------------------------------- rendering
+
+  function badgeFor(status, stale) {
+    var map = {
+      active:     ["ok", "ACTIVE"],
+      registered: [stale ? "bad" : "ok", "REGISTERED"],
+      pending:    ["wait", "PENDING"],
+      inactive:   ["off", "INACTIVE"],
+      absent:     ["off", "ABSENT"],
+      failed:     ["bad", "FAILED"]
+    };
+    var m = map[status] || ["off", String(status).toUpperCase()];
+    return '<span class="badge ' + m[0] + '">' + m[1] + "</span>";
+  }
+
+  function renderStates(s, id, isRegistry) {
+    var stale = isRegistry && s.kv.boundClosed;
+    var html = '<div class="state-row"><span class="k">store</span><span class="v">' +
+      (s.provider === "none" ? '<span class="badge off">NONE</span>'
+                             : '<span class="badge ok">' + s.provider.toUpperCase() + "</span>") +
+      "</span></div>";
+    html += '<div class="state-row"><span class="k">tool_kv</span><span class="v">' +
+      badgeFor(s.kv.status, stale) +
+      (stale ? '<span class="note">holding a closed ' + s.kv.bound + " store</span>" : "") +
+      (s.kv.status === "pending" ? '<span class="note">waiting for a provider</span>' : "") +
+      "</span></div>";
+    if (s.broken.status !== "absent" || s.broken.routes) {
+      html += '<div class="state-row"><span class="k">tool_broken</span><span class="v">' +
+        badgeFor(s.broken.status === "failed" ? "failed" : "absent", false) +
+        (s.broken.routes ? '<span class="note">' + s.broken.routes + " routes still mounted</span>" : "") +
+        "</span></div>";
+    }
+    document.getElementById(id).innerHTML = html;
+  }
+
+  function renderMeters(s, id) {
+    document.getElementById(id).innerHTML = RESOURCES.map(function (r) {
+      var leaked = s.leaked[r.key] + (r.key === "routes" ? s.broken.routes : 0);
+      return '<div class="meter' + (leaked ? " leaking" : "") + '">' +
+        '<span class="lab2">' + r.label + "</span>" +
+        '<span class="live">' + live(s, r.key) + "</span>" +
+        '<span class="leak">' + leaked + "</span></div>";
+    }).join("");
+  }
+
+  function renderWire(s, id) {
+    var el = document.getElementById(id);
+    if (!s.wire.length) { el.innerHTML = '<span class="dim">no request sent yet</span>'; return; }
+    el.innerHTML = s.wire.map(function (w, i) {
+      return '<span class="' + (i === 0 ? w.cls : "dim") + '">' + w.text + "</span>";
+    }).join("\n");
+  }
+
+  function renderRail() {
+    document.getElementById("rail").innerHTML = STEPS.map(function (s, i) {
+      var cls = "chip";
+      if (results[i]) { cls += results[i].every(function (r) { return r.ok; }) ? " pass" : " fail"; }
+      if (i === cur) { cls += " current"; }
+      return '<button type="button" class="' + cls + '" data-step="' + i + '" title="' +
+        s.title.replace(/"/g, "&quot;") + '">' + i + "</button>";
+    }).join("");
+  }
+
+  function renderLog() {
+    return '<div class="log">' + LOG.map(function (e) {
+      return '<div><span class="src ' + (e.src === "cordis" ? "a-src" : "b-src") + '">' +
+        (e.src === "cordis" ? "cordis" : "regstry") + "</span><span>" + e.text + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function renderExplain() {
+    var head = document.getElementById("explain-head");
+    var body = document.getElementById("explain-body");
+    var html = "";
+
+    if (offScript || cur < 0) {
+      head.textContent = offScript ? "FREE PLAY" : "WALKTHROUGH";
+      if (offScript) {
+        html += '<div class="offscript">Off script - a free-play action was taken. ' +
+          "Press Restart, then Next step, to run the walkthrough from the top.</div>";
+      }
+      if (cur < 0 && !offScript) {
+        html += '<div class="block"><span class="h">Walkthrough</span>' +
+          "<p>Ten steps, modelled on <code>tests/UAT/benefit.sh</code>. Each one states why it exists and " +
+          "what to expect, applies one action to <strong>both</strong> runtimes, then asserts the result " +
+          "against the live model. Press <strong>Next step</strong>, or click a number to jump.</p></div>";
+      }
+      if (EXPLAIN && (offScript || cur < 0)) {
+        html += '<div class="block"><span class="h">' + (offScript ? "What just happened" : "Free play") +
+          '</span><h4 style="margin:0;font-family:var(--mono);font-size:var(--step--1)">' +
+          EXPLAIN.title + "</h4><p>" + EXPLAIN.body + "</p></div>";
+      }
+      body.innerHTML = html + renderLog();
+      return;
+    }
+
+    var step = STEPS[cur];
+    var rs = results[cur] || [];
+    head.textContent = "STEP " + cur + " / " + (STEPS.length - 1);
+
+    html += '<div class="block"><span class="h">Step ' + cur + "</span>" +
+      '<h4 style="margin:0;font-family:var(--mono);font-size:var(--step--1);font-weight:600">' +
+      step.title + "</h4></div>";
+    html += '<div class="block"><span class="h">Why</span><p>' + step.why + "</p></div>";
+    html += '<div class="block expect"><span class="h">Expect</span><p>' + step.expect + "</p></div>";
+    html += '<div class="asserts">' + rs.map(function (r) {
+      return '<div class="assert ' + (r.ok ? "p" : "f") + '"><span class="m">[' +
+        (r.ok ? "PASS" : "FAIL") + "]</span><span>" + r.label + "</span></div>";
+    }).join("") + "</div>";
+
+    var t = tally();
+    html += '<div class="summary"><span>steps run     : ' + t.steps + "</span>" +
+      "<span>assertions    : " + t.pass + " passed, " + t.fail + " failed</span>";
+    if (cur === STEPS.length - 1) {
+      html += '<span class="result ' + (t.fail ? "fail" : "pass") + '">RESULT: ' +
+        (t.fail ? "FAIL" : "PASS") + "</span>";
+    }
+    html += "</div>";
+
+    body.innerHTML = html + renderLog();
+  }
+
+  function render() {
+    renderStates(A, "states-a", false);
+    renderStates(B, "states-b", true);
+    renderMeters(A, "meters-a");
+    renderMeters(B, "meters-b");
+    renderWire(A, "wire-a");
+    renderWire(B, "wire-b");
+
+    [[A, "residue-a"], [B, "residue-b"]].forEach(function (pair) {
+      var n = residue(pair[0]);
+      var el = document.getElementById(pair[1]);
+      el.textContent = String(n);
+      el.className = "residue-num " + (n ? "dirty" : "clean");
+    });
+
+    renderRail();
+    renderExplain();
+
+    document.getElementById("wt-count").textContent = cur < 0
+      ? "Walkthrough - not started"
+      : "Walkthrough - step " + cur + " of " + (STEPS.length - 1);
+    document.getElementById("wt-title").textContent = cur < 0
+      ? "Press Next step to begin"
+      : STEPS[cur].title;
+    document.getElementById("wt-next").disabled = cur >= STEPS.length - 1;
+    document.getElementById("wt-back").disabled = cur < 0;
+
+    Array.prototype.forEach.call(document.querySelectorAll("#provider-ctl button"), function (b) {
+      b.classList.toggle("on", b.getAttribute("data-provider") === A.provider);
+    });
+    document.getElementById("btn-retire").disabled = A.kv.status === "absent" && B.kv.status === "absent";
+    document.getElementById("btn-read").disabled = !(kvServing(A) || kvServing(B));
+    document.getElementById("btn-hit-broken").disabled = A.broken.status === "absent" && !B.broken.routes;
+
+    var canonical = A.provider === "memory" && A.kv.status === "active" && same(counts(A), [5, 3, 5, 6]);
+    var calib = document.getElementById("calib");
+    calib.classList.toggle("hit", canonical);
+    document.getElementById("calib-text").innerHTML = canonical
+      ? "This is exactly the state <code>--scenario residue</code> measures: Snapshot(routes=5, subscribers=3, connections=5, tasks=6). Retire tool_kv to get the 0-against-9 the real run prints."
+      : "Reach the state that <code>--scenario residue</code> measures to check the model against the real run.";
+  }
+
+  // --------------------------------------------------------------- wiring
+
+  function freePlay(fn) {
+    return function () {
+      fn();
+      if (cur >= 0) { offScript = true; }
+      render();
+    };
+  }
+  function on(id, fn) { document.getElementById(id).addEventListener("click", fn); }
+
+  Array.prototype.forEach.call(document.querySelectorAll("#provider-ctl button"), function (b) {
+    b.addEventListener("click", freePlay(function () { setProvider(b.getAttribute("data-provider")); }));
+  });
+  on("btn-compose", freePlay(compose));
+  on("btn-retire", freePlay(retire));
+  on("btn-serve", freePlay(serve));
+  on("btn-read", freePlay(readBack));
+  on("btn-broken", freePlay(loadBroken));
+  on("btn-hit-broken", freePlay(hitBroken));
+  on("btn-reset", freePlay(reset));
+
+  on("wt-next", function () { next(); render(); });
+  on("wt-back", function () { back(); render(); });
+  on("wt-restart", function () { restart(); render(); });
+
+  document.getElementById("rail").addEventListener("click", function (ev) {
+    var t = ev.target;
+    if (t && t.getAttribute && t.getAttribute("data-step") !== null) {
+      runTo(Number(t.getAttribute("data-step")));
+      render();
+    }
+  });
+
+  restart();
+  render();
+})();
+</script>
+</body></html>                                           <!-- doc-skeleton -->
