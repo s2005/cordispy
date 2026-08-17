@@ -10,7 +10,10 @@ and never reused, so an unchanged uid is proof that a fiber was left alone.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -22,6 +25,7 @@ from cordispy.loader import (
     EntryOptions,
     Loader,
     LoaderError,
+    LoaderPolicy,
     read_config,
 )
 
@@ -75,6 +79,25 @@ COMPONENTS: dict[str, Any] = {
 
 def build(root: Context, **kwargs: Any) -> Loader:
     return Loader(root, resolve=COMPONENTS.get, **kwargs)
+
+
+def include_policy(root: Path, **limits: Any) -> LoaderPolicy:
+    return LoaderPolicy(include_roots=(root,), **limits)
+
+
+def make_directory_link(link: Path, target: Path) -> None:
+    try:
+        os.symlink(target, link, target_is_directory=True)
+    except OSError as error:
+        if os.name != "nt":
+            pytest.fail(f"directory links are unavailable: {error}")
+        result = subprocess.run(
+            ["cmd.exe", "/d", "/c", "mklink", "/j", str(link), str(target)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr or result.stdout
 
 
 def uids(loader: Loader) -> dict[str, int | None]:
@@ -160,6 +183,59 @@ async def test_a_document_file_is_realized_as_a_fiber_tree(tmp_path: Path) -> No
         "  - alpha [demo:alpha] ACTIVE #3",
     ]
     assert routes(root) == {"/alpha": "alpha"}
+
+
+async def test_imports_are_denied_without_calling_the_import_system(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    called: list[str] = []
+
+    def record_import(name: str) -> Any:
+        called.append(name)
+        return SimpleNamespace(default=make_tool("imported"))
+
+    monkeypatch.setattr("cordispy.loader.loader.importlib.import_module", record_import)
+    root = Context()
+    loader = build(root)
+    await loader.reconcile(flat({"id": "imported", "name": "untrusted.module"}))
+
+    error = loader.entry("imported").error
+    assert isinstance(error, LoaderError)
+    assert "imports are disabled" in str(error)
+    assert called == []
+
+
+async def test_a_resolver_remains_the_secure_component_allowlist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_import(name: str) -> Any:
+        pytest.fail(f"resolver-served component unexpectedly imported {name}")
+
+    monkeypatch.setattr("cordispy.loader.loader.importlib.import_module", fail_import)
+    root = Context()
+    loader = build(root)
+    await loader.reconcile(flat({"id": "alpha", "name": "demo:alpha"}))
+
+    assert routes(root) == {"/alpha": "alpha"}
+
+
+async def test_the_named_trusted_loader_enables_imports(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    called: list[str] = []
+
+    def record_import(name: str) -> Any:
+        called.append(name)
+        return SimpleNamespace(default=make_tool("imported"))
+
+    monkeypatch.setattr("cordispy.loader.loader.importlib.import_module", record_import)
+    root = Context()
+    loader = Loader.trusted(root, base=tmp_path, resolve=COMPONENTS.get)
+    await loader.reconcile(flat({"id": "imported", "name": "trusted.module"}))
+
+    assert called == ["trusted.module"]
+    assert routes(root) == {"/imported": "imported"}
 
 
 # ---------------------------------------------------------------------------
@@ -440,7 +516,7 @@ async def test_include_grafts_a_file_in_and_namespaces_its_ids(tmp_path: Path) -
     nested.write_text(json.dumps([{"id": "alpha", "name": "demo:alpha"}]), encoding="utf-8")
 
     root = Context()
-    loader = build(root, base=tmp_path)
+    loader = build(root, base=tmp_path, policy=include_policy(tmp_path))
     await loader.reconcile(flat({"id": "extra", "name": BUILTIN_INCLUDE, "config": {"path": "tools.json"}}))
 
     assert [entry.id for entry in loader.entries()] == ["store", "extra", "extra:alpha"]
@@ -451,12 +527,222 @@ async def test_include_grafts_a_file_in_and_namespaces_its_ids(tmp_path: Path) -
     assert routes(root) == {}
 
 
+async def test_includes_are_disabled_by_default_even_with_a_base(tmp_path: Path) -> None:
+    nested = tmp_path / "tools.json"
+    nested.write_text("[]", encoding="utf-8")
+    loader = build(Context(), base=tmp_path)
+
+    with pytest.raises(LoaderError, match="includes are disabled"):
+        await loader.reconcile([{"id": "extra", "name": BUILTIN_INCLUDE, "config": {"path": "tools.json"}}])
+
+
+@pytest.mark.parametrize("path_style", ["absolute", "relative"])
+async def test_an_include_cannot_escape_its_allowed_root(tmp_path: Path, path_style: str) -> None:
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    outside = tmp_path / "outside.json"
+    outside.write_text("[]", encoding="utf-8")
+    requested = str(outside) if path_style == "absolute" else "../outside.json"
+    loader = build(Context(), base=allowed, policy=include_policy(allowed))
+
+    with pytest.raises(LoaderError, match="escapes the configured include roots"):
+        await loader.reconcile([{"id": "escape", "name": BUILTIN_INCLUDE, "config": {"path": requested}}])
+
+
+async def test_an_include_cannot_escape_through_a_link(tmp_path: Path) -> None:
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "tools.json").write_text("[]", encoding="utf-8")
+    link = allowed / "linked"
+    make_directory_link(link, outside)
+    loader = build(Context(), base=allowed, policy=include_policy(allowed))
+
+    with pytest.raises(LoaderError, match="escapes the configured include roots"):
+        await loader.reconcile(
+            [{"id": "escape", "name": BUILTIN_INCLUDE, "config": {"path": "linked/tools.json"}}]
+        )
+
+
+@pytest.mark.parametrize("kind", ["suffix", "directory"])
+async def test_an_include_must_be_a_supported_regular_file(tmp_path: Path, kind: str) -> None:
+    if kind == "suffix":
+        target = tmp_path / "tools.txt"
+        target.write_text("[]", encoding="utf-8")
+        message = "must name a .json"
+    else:
+        target = tmp_path / "tools.json"
+        target.mkdir()
+        message = "not a regular file"
+    loader = build(Context(), base=tmp_path, policy=include_policy(tmp_path))
+
+    with pytest.raises(LoaderError, match=message):
+        await loader.reconcile([{"id": "extra", "name": BUILTIN_INCLUDE, "config": {"path": target.name}}])
+
+
+async def test_a_root_file_cannot_include_itself(tmp_path: Path) -> None:
+    root_file = tmp_path / "root.json"
+    root_file.write_text(
+        json.dumps([{"id": "again", "name": BUILTIN_INCLUDE, "config": {"path": "root.json"}}]),
+        encoding="utf-8",
+    )
+    loader = build(Context(), policy=include_policy(tmp_path))
+
+    with pytest.raises(LoaderError, match="include cycle"):
+        await loader.load(root_file)
+    assert len(loader.ctx.registry) == 1
+
+
+async def test_an_indirect_include_cycle_is_rejected(tmp_path: Path) -> None:
+    first = tmp_path / "first.json"
+    second = tmp_path / "second.json"
+    first.write_text(
+        json.dumps([{"id": "second", "name": BUILTIN_INCLUDE, "config": {"path": "second.json"}}]),
+        encoding="utf-8",
+    )
+    second.write_text(
+        json.dumps([{"id": "first", "name": BUILTIN_INCLUDE, "config": {"path": "first.json"}}]),
+        encoding="utf-8",
+    )
+    loader = build(Context(), policy=include_policy(tmp_path))
+
+    with pytest.raises(LoaderError, match="include cycle"):
+        await loader.load(first)
+    assert len(loader.ctx.registry) == 1
+
+
+async def test_a_noncyclic_file_may_be_included_more_than_once(tmp_path: Path) -> None:
+    nested = tmp_path / "tools.json"
+    nested.write_text(json.dumps([{"id": "alpha", "name": "demo:alpha"}]), encoding="utf-8")
+    loader = build(Context(), base=tmp_path, policy=include_policy(tmp_path))
+
+    await loader.reconcile(
+        [
+            {"id": "left", "name": BUILTIN_INCLUDE, "config": {"path": "tools.json"}},
+            {"id": "right", "name": BUILTIN_INCLUDE, "config": {"path": "tools.json"}},
+        ]
+    )
+
+    assert [entry.id for entry in loader.entries()] == [
+        "left",
+        "left:alpha",
+        "right",
+        "right:alpha",
+    ]
+
+
+async def test_root_and_included_files_obey_the_byte_limit(tmp_path: Path) -> None:
+    oversized = tmp_path / "oversized.json"
+    oversized.write_text("[" + " " * 128 + "]", encoding="utf-8")
+    policy = include_policy(tmp_path, max_file_bytes=32)
+    loader = build(Context(), base=tmp_path, policy=policy)
+
+    with pytest.raises(LoaderError, match="max_file_bytes=32"):
+        await loader.load(oversized)
+    with pytest.raises(LoaderError, match="max_file_bytes=32"):
+        await loader.reconcile(
+            [{"id": "large", "name": BUILTIN_INCLUDE, "config": {"path": "oversized.json"}}]
+        )
+
+
+async def test_document_limits_are_enforced_before_reconciliation(tmp_path: Path) -> None:
+    nested = tmp_path / "nested.json"
+    nested.write_text(
+        json.dumps([{"id": "deeper", "name": BUILTIN_INCLUDE, "config": {"path": "leaf.json"}}]),
+        encoding="utf-8",
+    )
+    (tmp_path / "leaf.json").write_text("[]", encoding="utf-8")
+
+    with pytest.raises(LoaderError, match="max_entries=1"):
+        await build(Context(), policy=LoaderPolicy(max_entries=1)).reconcile(
+            [
+                {"id": "one", "name": "demo:alpha"},
+                {"id": "two", "name": "demo:beta"},
+            ]
+        )
+
+    include_limited = build(
+        Context(),
+        base=tmp_path,
+        policy=include_policy(tmp_path, max_include_depth=1),
+    )
+    with pytest.raises(LoaderError, match="max_include_depth=1"):
+        await include_limited.reconcile(
+            [{"id": "nested", "name": BUILTIN_INCLUDE, "config": {"path": "nested.json"}}]
+        )
+
+    file_limited = build(
+        Context(),
+        base=tmp_path,
+        policy=include_policy(tmp_path, max_included_files=1),
+    )
+    with pytest.raises(LoaderError, match="max_included_files=1"):
+        await file_limited.reconcile(
+            [
+                {"id": "first", "name": BUILTIN_INCLUDE, "config": {"path": "leaf.json"}},
+                {"id": "second", "name": BUILTIN_INCLUDE, "config": {"path": "leaf.json"}},
+            ]
+        )
+
+    deep: Any = "value"
+    for _ in range(8):
+        deep = {"nested": deep}
+    depth_limited = build(Context(), policy=LoaderPolicy(max_nesting_depth=6))
+    with pytest.raises(LoaderError, match="max_nesting_depth=6"):
+        await depth_limited.reconcile([{"id": "deep", "name": "demo:alpha", "config": deep}])
+
+
+@pytest.mark.parametrize("container_kind", ["mapping", "sequence"])
+async def test_self_referential_python_documents_are_rejected(container_kind: str) -> None:
+    if container_kind == "mapping":
+        record: dict[str, Any] = {"id": "loop", "name": "demo:alpha"}
+        record["config"] = record
+        document: Any = [record]
+    else:
+        sequence: list[Any] = []
+        sequence.append(sequence)
+        document = sequence
+    loader = build(Context())
+
+    with pytest.raises(LoaderError, match="self-referential"):
+        await loader.reconcile(document)
+    assert len(loader.ctx.registry) == 1
+
+
+async def test_preflight_failure_does_not_change_the_live_tree(tmp_path: Path) -> None:
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    outside = tmp_path / "outside.json"
+    outside.write_text("[]", encoding="utf-8")
+    root = Context()
+    loader = build(root, base=allowed, policy=include_policy(allowed))
+    await loader.reconcile(flat({"id": "alpha", "name": "demo:alpha"}))
+    before_description = loader.describe()
+    before_uids = uids(loader)
+    before_fibers = len(root.registry)
+    before_routes = routes(root)
+
+    with pytest.raises(LoaderError, match="escapes the configured include roots"):
+        await loader.reconcile(
+            flat(
+                {"id": "beta", "name": "demo:beta"},
+                {"id": "escape", "name": BUILTIN_INCLUDE, "config": {"path": "../outside.json"}},
+            )
+        )
+
+    assert loader.describe() == before_description
+    assert uids(loader) == before_uids
+    assert len(root.registry) == before_fibers
+    assert routes(root) == before_routes
+
+
 # ---------------------------------------------------------------------------
 # failure containment and teardown
 # ---------------------------------------------------------------------------
 
 
-async def test_an_entry_that_cannot_be_realized_does_not_derail_its_siblings() -> None:
+async def test_a_denied_import_does_not_derail_its_siblings() -> None:
     root = Context()
     loader = build(root)
     await loader.reconcile(
@@ -464,7 +750,8 @@ async def test_an_entry_that_cannot_be_realized_does_not_derail_its_siblings() -
     )
 
     broken = loader.entry("missing")
-    assert isinstance(broken.error, ModuleNotFoundError)
+    assert isinstance(broken.error, LoaderError)
+    assert "imports are disabled" in str(broken.error)
     assert broken.status == "FAILED"
     assert loader.entry("beta").status == "ACTIVE"
     assert set(routes(root)) == {"/beta"}

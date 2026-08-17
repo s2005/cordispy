@@ -20,7 +20,7 @@ A minimal use::
     from cordispy.loader import Loader, read_config
 
     root = Context()
-    loader = Loader(root)
+    loader = Loader.trusted(root, base=".")
     await loader.reconcile(read_config("app.yaml"))
     print("\\n".join(loader.describe()))
 """
@@ -43,6 +43,7 @@ from .loader import (
     BUILTIN_GROUP,
     BUILTIN_INCLUDE,
     Loader,
+    LoaderPolicy,
     Resolver,
     Tree,
     import_target,
@@ -63,6 +64,7 @@ __all__ = [
     "ImportGraph",
     "Loader",
     "LoaderError",
+    "LoaderPolicy",
     "ModuleNode",
     "RealmManager",
     "Resolver",

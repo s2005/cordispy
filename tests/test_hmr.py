@@ -260,7 +260,7 @@ async def _serving(workspace: tuple[Path, str], greeting: str) -> tuple[Context,
     (directory / "greeter.py").write_text(GREETER.format(greeting=greeting), encoding="utf-8")
 
     root = Context()
-    loader = Loader(root, base=directory)
+    loader = Loader.trusted(root, base=directory)
     await loader.reconcile(
         [
             {"id": "state", "name": f"{package}.state:state"},
