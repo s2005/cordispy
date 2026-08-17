@@ -210,7 +210,7 @@ async def part_a(config: Path, checks: Checks) -> Loader:
         checks.claim(read_config(twin) == document, "the YAML and JSON documents parse identically")
 
     root = Context()
-    loader = Loader(root, base=config.parent)
+    loader = Loader.trusted(root, base=config.parent)
 
     step("1", "load the configuration and show the fiber tree")
     await loader.reconcile(document)
@@ -341,7 +341,7 @@ async def part_b(site: Path, checks: Checks) -> None:
     field("plugin package", str(package))
 
     root = Context()
-    loader = Loader(root, base=site)
+    loader = Loader.trusted(root, base=site)
     await loader.reconcile(
         [
             {"id": "state", "name": f"{HOT_PACKAGE}.state:state"},
