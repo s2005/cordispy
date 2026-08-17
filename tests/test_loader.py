@@ -693,6 +693,24 @@ async def test_document_limits_are_enforced_before_reconciliation(tmp_path: Path
         await depth_limited.reconcile([{"id": "deep", "name": "demo:alpha", "config": deep}])
 
 
+async def test_group_walkers_handle_the_maximum_allowed_document_depth() -> None:
+    document: Any = [{"id": "leaf", "name": "demo:alpha"}]
+    for index in range(4):
+        document = [
+            {
+                "id": f"group-{index}",
+                "name": BUILTIN_GROUP,
+                "config": document,
+            }
+        ]
+    loader = build(Context(), policy=LoaderPolicy(max_nesting_depth=9))
+
+    await loader.reconcile(document)
+
+    assert len(list(loader.entries())) == 5
+    assert len(loader.describe()) == 5
+
+
 @pytest.mark.parametrize("container_kind", ["mapping", "sequence"])
 async def test_self_referential_python_documents_are_rejected(container_kind: str) -> None:
     if container_kind == "mapping":

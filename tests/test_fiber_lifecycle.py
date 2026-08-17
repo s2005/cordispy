@@ -16,7 +16,8 @@ from typing import Any
 import pytest
 
 from cordispy import Context, FiberState, Realm, plugin
-from cordispy.fiber import UNLOAD_DRAIN_PASSES
+from cordispy.component import Inject
+from cordispy.fiber import UNLOAD_DRAIN_PASSES, Fiber
 
 # --------------------------------------------------------------------------
 # Theorem 63: a dependency stays readable through the dependent's own teardown
@@ -700,6 +701,26 @@ async def test_a_declaration_cycle_is_detected_and_reported(
 
     assert first.state is FiberState.PENDING
     assert second.state is FiberState.PENDING
+
+
+def test_cycle_detection_handles_a_reverse_attached_deep_acyclic_graph() -> None:
+    root = Context()
+    registry = root.registry
+    fibers = [
+        Fiber(
+            uid=registry.next_uid(),
+            parent=root,
+            inject=Inject(required=() if index == 0 else (f"key-{index - 1}",)),
+            provide=(f"key-{index}",),
+            label=f"link-{index}",
+            registry=registry,
+        )
+        for index in range(5_000)
+    ]
+    for fiber in reversed(fibers):
+        registry.attach(fiber)
+
+    assert registry.find_cycles() == []
 
 
 async def test_a_self_cycle_is_detected_and_reported(

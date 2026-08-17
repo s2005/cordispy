@@ -233,10 +233,14 @@ class Fiber:
             except asyncio.CancelledError:
                 if not inertia.cancelled():
                     raise
-            except Exception:
+            except Exception as error:
                 # Already reported on the fiber, or through the task's own done
                 # callback. A dependent's failure must not derail this wait.
-                pass
+                logger.debug(
+                    "fiber <%s> wait observed its already reported transition failure",
+                    self.label,
+                    exc_info=error,
+                )
             if self.inertia is inertia:
                 self.inertia = None
         return self
