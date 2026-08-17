@@ -1,0 +1,6 @@
+/.github/workflows/ @s2005
+/.github/dependabot.yml @s2005
+/build-constraints.txt @s2005
+/pyproject.toml @s2005
+/uv.lock @s2005
+/SECURITY.md @s2005
