@@ -254,6 +254,47 @@ goes on offering `%` after the division its remainder is defined in terms of has
 - [`docs/limitations.md`](docs/limitations.md) -- what this port deliberately does not implement, and
   why.
 
+## Security
+
+Python components are trusted executable code, but configuration does not need to be. The ordinary
+`Loader` constructor denies import fallback and file includes by default. Give it a resolver whose
+results are the only components less-trusted configuration may select:
+
+```python
+from cordispy import Context
+from cordispy.loader import Loader
+
+components = {"application:store": store, "application:counter": counter}
+loader = Loader(Context(), resolve=components.get)
+await loader.load("config/app.yaml")
+```
+
+To allow includes, name every permitted directory explicitly. Relative paths are resolved from `base`,
+and resolved absolute paths, `..` paths, symlinks, and junctions must remain inside one of the roots:
+
+```python
+from pathlib import Path
+
+from cordispy.loader import LoaderPolicy
+
+config_root = Path("config").resolve()
+policy = LoaderPolicy(include_roots=(config_root,))
+loader = Loader(Context(), base=config_root, resolve=components.get, policy=policy)
+```
+
+`LoaderPolicy` also accepts the named limits `max_file_bytes`, `max_nesting_depth`, `max_entries`,
+`max_include_depth`, and `max_included_files`. Their defaults are 1 MiB, 64 nesting levels, 10,000
+entries, 16 include levels, and 128 included files. Validation completes before the live fiber tree is
+changed.
+
+Use `Loader.trusted(Context(), base="config")` only when every named module and included file is trusted
+as Python application code. This is the compatibility path for import-target configurations, and it is
+also the appropriate loader for `Hmr`. It enables Python imports and includes under the resolved base
+directory; it is not a sandbox.
+
+See [`SECURITY.md`](SECURITY.md) for supported versions, private vulnerability reporting, the complete
+trust boundary, and the release-control checklist.
+
 ## Acknowledgements
 
 This port contributes no ideas of its own. The paradigm, the algorithms and the evidence that they hold

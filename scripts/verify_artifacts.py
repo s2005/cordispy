@@ -69,6 +69,7 @@ def _verify_sdist(sdist: Path, *, version: str) -> None:
         f"{root}/LICENSE",
         f"{root}/PKG-INFO",
         f"{root}/README.md",
+        f"{root}/SECURITY.md",
         f"{root}/pyproject.toml",
     }
     missing = sorted(required - names)

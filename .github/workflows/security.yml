@@ -1,0 +1,68 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Dependency, source, secret, and workflow scans
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: false
+          python-version: "3.11"
+          version: "0.11.14"
+
+      - run: uv sync --all-extras --all-groups --frozen
+
+      - name: Export locked dependencies
+        run: |
+          uv export \
+            --frozen \
+            --all-extras \
+            --all-groups \
+            --no-emit-project \
+            --no-hashes \
+            --output-file "${RUNNER_TEMP}/audit-requirements.txt"
+
+      - name: Audit dependencies
+        run: |
+          uv run --frozen --group security pip-audit \
+            --requirement "${RUNNER_TEMP}/audit-requirements.txt" \
+            --strict \
+            --progress-spinner off
+
+      - name: Scan source
+        run: |
+          uv run --frozen --group security bandit \
+            --recursive src/cordispy \
+            --severity-level low \
+            --confidence-level low
+
+      - name: Scan tracked files for secrets
+        run: |
+          git ls-files -z | \
+            xargs -0 uv run --frozen --group security detect-secrets scan \
+            > "${RUNNER_TEMP}/detect-secrets.json"
+          uv run --frozen python scripts/verify_secret_report.py \
+            --report "${RUNNER_TEMP}/detect-secrets.json"
+
+      - name: Analyze workflows
+        run: uv run --frozen --group security zizmor .github/workflows

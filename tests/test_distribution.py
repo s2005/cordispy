@@ -69,3 +69,29 @@ def test_publish_credentials_are_isolated_from_the_build() -> None:
     assert publish["steps"][1]["with"]["attestations"] is True
     assert "checkout" not in repr(publish)
     assert "cache" not in repr(publish)
+
+
+def test_security_policy_is_owned_and_packaged() -> None:
+    security = (REPOSITORY / "SECURITY.md").read_text(encoding="utf-8")
+    pyproject = (REPOSITORY / "pyproject.toml").read_text(encoding="utf-8")
+    owners = (REPOSITORY / ".github" / "CODEOWNERS").read_text(encoding="utf-8")
+
+    assert "GitHub private vulnerability reporting" in security
+    assert "Loader.trusted" in security
+    assert '"SECURITY.md"' in pyproject
+    assert "/SECURITY.md @s2005" in owners
+
+
+def test_security_maintenance_covers_actions_dependencies_source_and_secrets() -> None:
+    dependabot = yaml.safe_load((REPOSITORY / ".github" / "dependabot.yml").read_text(encoding="utf-8"))
+    ecosystems = {update["package-ecosystem"] for update in dependabot["updates"]}
+    assert ecosystems == {"github-actions", "uv"}
+
+    security = _workflow("security.yml")
+    scan_text = repr(security["jobs"]["scan"])
+    assert "pip-audit" in scan_text
+    assert "bandit" in scan_text
+    assert "detect-secrets" in scan_text
+    assert "verify_secret_report.py" in scan_text
+    assert "zizmor" in scan_text
+    assert "uvx" not in scan_text
