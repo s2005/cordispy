@@ -185,26 +185,39 @@ class Registry:
         seen: set[frozenset[int]] = set()
         colour: dict[Fiber, int] = dict.fromkeys(edges, _WHITE)
         path: list[Fiber] = []
+        positions: dict[Fiber, int] = {}
 
-        def visit(node: Fiber) -> None:
-            colour[node] = _GREY
-            path.append(node)
-            for successor in edges[node]:
+        for fiber in edges:
+            if colour[fiber] != _WHITE:
+                continue
+            colour[fiber] = _GREY
+            positions[fiber] = len(path)
+            path.append(fiber)
+            stack: list[tuple[Fiber, int]] = [(fiber, 0)]
+
+            while stack:
+                node, successor_index = stack[-1]
+                successors = edges[node]
+                if successor_index >= len(successors):
+                    stack.pop()
+                    path.pop()
+                    positions.pop(node)
+                    colour[node] = _BLACK
+                    continue
+
+                successor = successors[successor_index]
+                stack[-1] = (node, successor_index + 1)
                 if colour[successor] == _GREY:
-                    start = path.index(successor)
-                    loop = tuple(path[start:])
+                    loop = tuple(path[positions[successor] :])
                     signature = frozenset(id(member) for member in loop)
                     if signature not in seen:
                         seen.add(signature)
                         cycles.append(tuple(member.label for member in loop))
                 elif colour[successor] == _WHITE:
-                    visit(successor)
-            path.pop()
-            colour[node] = _BLACK
-
-        for fiber in edges:
-            if colour[fiber] == _WHITE:
-                visit(fiber)
+                    colour[successor] = _GREY
+                    positions[successor] = len(path)
+                    path.append(successor)
+                    stack.append((successor, 0))
         return cycles
 
     def warn_on_cycles(self, fiber: Fiber) -> None:
