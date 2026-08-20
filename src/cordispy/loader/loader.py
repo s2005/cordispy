@@ -606,8 +606,21 @@ class Loader:
         return prepared_root
 
     def _validate_graph(self, value: Any, *, label: str) -> None:
-        """Reject recursive Python containers and excessive document depth."""
+        """Reject recursive Python containers and excessive document depth.
+
+        A parsed document is a graph, not a tree: a YAML alias resolves to a
+        shared reference, so one object is reachable by many paths. Walking it
+        once per path is what turns a kilobyte of aliases into an exponential
+        amount of work, so ``deepest`` records the depth each container was
+        last walked at and a repeat visit is skipped unless it arrives deeper
+        than that. Skipping only ever drops a walk that already finished, which
+        keeps both checks exact: a cycle is caught while the container is still
+        on ``active``, and a shared subtree is re-walked whenever some path
+        could push it past the depth limit. Since the recorded depth strictly
+        grows, each container is walked at most ``max_nesting_depth`` times.
+        """
         active: set[int] = set()
+        deepest: dict[int, int] = {}
         stack: list[tuple[Any, int, bool]] = [(value, 0, False)]
         while stack:
             current, depth, leaving = stack.pop()
@@ -623,6 +636,9 @@ class Loader:
                 raise LoaderError(f"{label} exceeds max_nesting_depth={self.policy.max_nesting_depth}")
             if identity in active:
                 raise LoaderError(f"{label} contains a self-referential mapping or sequence")
+            if deepest.get(identity, -1) >= depth:
+                continue
+            deepest[identity] = depth
             active.add(identity)
             stack.append((current, depth, True))
             children = list(current.values()) if is_mapping else list(current)
@@ -646,10 +662,31 @@ def _claimed_ids(records: Sequence[Any]) -> set[str]:
     return claimed
 
 
-def _freeze_value(value: Any) -> Any:
-    """Freeze a validated value; recursion is bounded by ``LoaderPolicy``."""
-    if isinstance(value, Mapping):
-        return MappingProxyType({key: _freeze_value(item) for key, item in value.items()})
-    if isinstance(value, Sequence) and not isinstance(value, str | bytes):
-        return tuple(_freeze_value(item) for item in value)
-    return value
+def _freeze_value(value: Any, memo: dict[int, tuple[Any, Any]] | None = None) -> Any:
+    """Freeze a validated value; recursion is bounded by ``LoaderPolicy``.
+
+    ``memo`` holds the frozen form of every container this call has already
+    seen, keyed by identity, so a sub-object shared by many parents -- what a
+    YAML alias resolves to -- is frozen once rather than once per reference,
+    and the frozen document shares its structure the way the source did. The
+    source object is kept beside its frozen form so that the identity the memo
+    is keyed by cannot be reused while the memo is alive. A fresh memo per
+    top-level call keeps a record that preflight mutates from being cached
+    across the frames that mutate it.
+    """
+    if memo is None:
+        memo = {}
+    is_mapping = isinstance(value, Mapping)
+    is_sequence = isinstance(value, Sequence) and not isinstance(value, str | bytes)
+    if not is_mapping and not is_sequence:
+        return value
+    identity = id(value)
+    remembered = memo.get(identity)
+    if remembered is not None:
+        return remembered[1]
+    if is_mapping:
+        frozen: Any = MappingProxyType({key: _freeze_value(item, memo) for key, item in value.items()})
+    else:
+        frozen = tuple(_freeze_value(item, memo) for item in value)
+    memo[identity] = (value, frozen)
+    return frozen

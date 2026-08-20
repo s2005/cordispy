@@ -14,7 +14,7 @@ The maintainer will acknowledge the report, confirm its scope, coordinate a fix 
 
 Python components are trusted executable code. This includes components returned by a resolver, modules enabled through `Loader.trusted`, and source reloaded by `Hmr`. Importing or reloading one of these components runs its Python module code with the permissions of the host process.
 
-The ordinary `Loader` constructor is the boundary for less-trusted configuration. It denies Python import fallback and file includes by default. Applications may provide an explicit resolver allowlist, and may enable includes only under resolved `LoaderPolicy.include_roots`. File size, nesting, entry, include-depth, and included-file limits are enforced before the running fiber tree is changed.
+The ordinary `Loader` constructor is the boundary for less-trusted configuration. It denies Python import fallback and file includes by default. Applications may provide an explicit resolver allowlist, and may enable includes only under resolved `LoaderPolicy.include_roots`. File size, nesting, entry, include-depth, and included-file limits are enforced before the running fiber tree is changed. That validation walks a document as a graph rather than a tree, so a mapping or sequence reached by many references -- what a YAML alias resolves to -- costs what the objects it holds cost instead of what its expansion would.
 
 This library does not sandbox trusted Python components. Applications that accept configuration from another trust domain must keep import fallback disabled, constrain include roots, and avoid returning attacker-selected components from their resolver.
 

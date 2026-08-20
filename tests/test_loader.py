@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from collections.abc import Iterator
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -726,6 +727,41 @@ async def test_self_referential_python_documents_are_rejected(container_kind: st
     with pytest.raises(LoaderError, match="self-referential"):
         await loader.reconcile(document)
     assert len(loader.ctx.registry) == 1
+
+
+class _CountedList(list[Any]):
+    """A list that fails the test rather than let an unbounded walk run on."""
+
+    budget = 0
+
+    def __iter__(self) -> Iterator[Any]:
+        type(self).budget -= 1
+        if type(self).budget < 0:
+            raise AssertionError("preflight walked a shared sub-object once per reference")
+        return super().__iter__()
+
+
+async def test_shared_sub_objects_are_walked_once_per_depth() -> None:
+    """The shape ``yaml.safe_load`` gives an alias: one object on many paths.
+
+    Nine levels of tenfold sharing is well under a kilobyte of YAML and ninety
+    one objects in memory, but 10**9 nodes to a walk that mistakes the graph
+    for a tree -- and a preflight paying that cost never returns to enforce the
+    limits it exists to enforce, so none of them catch it. The budget is what
+    makes a regression here a fast failure instead of a hung test run.
+    """
+    payload: Any = _CountedList(["x"] * 10)
+    for _ in range(9):
+        payload = _CountedList([payload] * 10)
+    loader = build(Context())
+    _CountedList.budget = 100
+
+    await loader.reconcile(flat({"id": "bomb", "name": "demo:alpha", "config": {"payload": payload}}))
+
+    realized = {entry.id: entry.options.config for entry in loader.entries()}
+    assert sorted(realized) == ["bomb", "store"]
+    frozen = realized["bomb"]["payload"]
+    assert frozen[0] is frozen[1], "freezing a shared sub-object twice costs what walking it twice costs"
 
 
 async def test_preflight_failure_does_not_change_the_live_tree(tmp_path: Path) -> None:
