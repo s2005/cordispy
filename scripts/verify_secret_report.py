@@ -15,9 +15,16 @@ def verify_report(*, report: Path) -> None:
     results = document.get("results")
     if not isinstance(results, dict):
         raise ValueError("detect-secrets report has no results object")
-    findings = sum(len(items) for items in results.values() if isinstance(items, list))
-    if results:
-        raise ValueError(f"detect-secrets reported {findings} finding(s) in {len(results)} file(s)")
+    for path, items in results.items():
+        # A scanned file is reported as a list of findings, empty or not. Anything
+        # else means the report is not the shape this gate can read, and a secret
+        # gate that cannot read its input has to fail closed.
+        if not isinstance(items, list):
+            raise ValueError(f"detect-secrets report entry for {path!r} is not a list of findings")
+    flagged = {path: items for path, items in results.items() if items}
+    if flagged:
+        findings = sum(len(items) for items in flagged.values())
+        raise ValueError(f"detect-secrets reported {findings} finding(s) in {len(flagged)} file(s)")
 
 
 def _parser() -> argparse.ArgumentParser:
