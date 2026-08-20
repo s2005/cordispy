@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 # is taken on PyPI by an unrelated 0.0.0 placeholder from 2024 that ships its own
 # top-level `cordis` package, so this project stays clear of it on both counts.
 name = "cordispy"
-version = "0.0.1"
+version = "0.1.0"
 description = "A Python realization of the spatiotemporal composability runtime described in the Cordis paper"
 readme = "README.md"
 requires-python = ">=3.11"
