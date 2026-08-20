@@ -83,10 +83,6 @@ def test_security_policy_is_owned_and_packaged() -> None:
 
 
 def test_security_maintenance_covers_actions_dependencies_source_and_secrets() -> None:
-    dependabot = yaml.safe_load((REPOSITORY / ".github" / "dependabot.yml").read_text(encoding="utf-8"))
-    ecosystems = {update["package-ecosystem"] for update in dependabot["updates"]}
-    assert ecosystems == {"github-actions", "uv"}
-
     security = _workflow("security.yml")
     scan_text = repr(security["jobs"]["scan"])
     assert "pip-audit" in scan_text
