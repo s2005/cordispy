@@ -82,7 +82,7 @@ from .fiber import Fiber, FiberState, Target
 from .realm import Binding, Realm, Store
 from .registry import NotifyPredicate, Registry, notify
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 __all__ = [
     "AccessError",
